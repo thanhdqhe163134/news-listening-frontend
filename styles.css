@@ -1,12 +1,22 @@
-/* styles.css */
-
-/* Giữ lại các style chung nếu bạn muốn */
-body {
-    background-color: #f8f9fa; /* Một màu nền sáng hơn từ Bootstrap */
+/* Giao diện con trỏ cho các thẻ tag và nút phân trang */
+.tag, .page-link {
+    cursor: pointer;
 }
 
-/* Bạn có thể thêm các style tùy chỉnh ở đây để ghi đè hoặc bổ sung cho Bootstrap */
-.card-header h2 {
-    margin-bottom: 0; /* Bỏ khoảng trống mặc định của h2 để vừa vặn hơn trong card-header */
-    font-size: 1.5rem;
+/* Hiệu ứng khi di chuột qua thẻ tag */
+.tag:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+    transition: all 0.2s ease-in-out;
+}
+
+.article-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Stretched-link cần parent có position relative */
+.card {
+    position: relative;
 }
