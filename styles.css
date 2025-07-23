@@ -1,0 +1,12 @@
+/* styles.css */
+
+/* Giữ lại các style chung nếu bạn muốn */
+body {
+    background-color: #f8f9fa; /* Một màu nền sáng hơn từ Bootstrap */
+}
+
+/* Bạn có thể thêm các style tùy chỉnh ở đây để ghi đè hoặc bổ sung cho Bootstrap */
+.card-header h2 {
+    margin-bottom: 0; /* Bỏ khoảng trống mặc định của h2 để vừa vặn hơn trong card-header */
+    font-size: 1.5rem;
+}
