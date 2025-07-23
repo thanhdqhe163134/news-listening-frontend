@@ -1,157 +1,41 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ================== CẤU HÌNH ==================
-    const API_BASE_URL = 'https://759d11ba55a7.ngrok-free.app/api/v1';
+    // =================================================================
+    // ==                     PHẦN CẤU HÌNH                           ==
+    // =================================================================
+    const API_BASE_URL = 'https://759d11ba55a7.ngrok-free.app/api/v1'; // URL ngrok của bạn
 
-    // ================== LẤY CÁC PHẦN TỬ DOM ==================
-    const searchInput = document.getElementById('search-input');
-    const sentimentFilter = document.getElementById('sentiment-filter');
-    const sortBy = document.getElementById('sort-by');
-    const sortOrderBtn = document.getElementById('sort-order-btn');
-    const resetFiltersBtn = document.getElementById('reset-filters-btn');
-    const articlesList = document.getElementById('articles-list');
-    const paginationControls = document.getElementById('pagination-controls');
-    const alertContainer = document.getElementById('alert-container');
+    // =================================================================
+    // ==              LẤY CÁC PHẦN TỬ HTML (DOM)                     ==
+    // =================================================================
+    const dom = {
+        articleSearchInput: document.getElementById('article-search-input'),
+        keywordSearchInput: document.getElementById('keyword-search-input'),
+        keywordSuggestions: document.getElementById('keyword-suggestions'),
+        sentimentFilter: document.getElementById('sentiment-filter'),
+        sortBy: document.getElementById('sort-by'),
+        sortOrderBtn: document.getElementById('sort-order-btn'),
+        resetFiltersBtn: document.getElementById('reset-filters-btn'),
+        articlesList: document.getElementById('articles-list'),
+        paginationControls: document.getElementById('pagination-controls'),
+        alertContainer: document.getElementById('alert-container'),
+        categoryFilterList: document.getElementById('category-filter-list'),
+    };
 
-    // ================== QUẢN LÝ TRẠNG THÁI (STATE) ==================
-    // Lưu trữ tất cả các tham số truy vấn hiện tại
+    // =================================================================
+    // ==               QUẢN LÝ TRẠNG THÁI BỘ LỌC (STATE)             ==
+    // =================================================================
     let queryState = {
         search: '',
         sentiment: '',
         category_id: null,
-        keyword_id: null,
+        crawl_keyword_id: null,
         sort_by: 'published_at',
         sort_order: 'desc',
         page: 1,
         size: 10
     };
 
-    /**
-     * Hàm chính để lấy và hiển thị các bài viết dựa trên `queryState`
-     */
-    async function fetchAndDisplayArticles() {
-        // Hiển thị trạng thái đang tải
-        articlesList.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Đang tải...</p></div>`;
-        paginationControls.innerHTML = '';
-        alertContainer.innerHTML = '';
-
-        // Tạo chuỗi query string từ state
-        const params = new URLSearchParams();
-        Object.entries(queryState).forEach(([key, value]) => {
-            if (value !== null && value !== '') {
-                params.append(key, value);
-            }
-        });
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/processed-articles/?${params.toString()}`, {
-                method: 'GET',
-                headers: { 'ngrok-skip-browser-warning': 'true' }
-            });
-
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.detail || 'Lỗi không xác định');
-
-            if (result.success && result.data.data.length > 0) {
-                displayArticles(result.data.data);
-                displayPagination(result.data);
-            } else {
-                articlesList.innerHTML = '';
-                alertContainer.innerHTML = `<div class="alert alert-warning">Không tìm thấy bài viết nào phù hợp.</div>`;
-            }
-        } catch (error) {
-            console.error('Lỗi khi tải bài viết:', error);
-            articlesList.innerHTML = '';
-            alertContainer.innerHTML = `<div class="alert alert-danger">Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.</div>`;
-        }
-    }
-
-    /**
-     * Hiển thị danh sách các bài viết
-     * @param {Array} articles - Mảng các bài viết từ API
-     */
-    function displayArticles(articles) {
-        articlesList.innerHTML = ''; // Xóa nội dung cũ
-        articles.forEach(article => {
-            const sentimentInfo = getSentimentInfo(article.sentiment);
-            
-            const categoriesHtml = article.categories.map(cat => 
-                `<span class="badge me-1 tag category-tag" data-id="${cat.category_id}">${cat.name}</span>`
-            ).join('');
-
-            const keywordsHtml = article.keywords.map(kw => 
-                `<span class="badge me-1 tag keyword-tag" data-id="${kw.keyword_id}">${kw.keyword_text}</span>`
-            ).join('');
-
-            const articleCard = `
-                <div class="card shadow-sm article-card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-1">${article.title}</h5>
-                        <div class="mb-2 text-muted small">
-                            <span>Ngày đăng: ${new Date(article.published_at).toLocaleDateString('vi-VN')}</span>
-                            <span class="mx-2">|</span>
-                            <span>Nguồn: ${article.source_id}</span>
-                        </div>
-                        <p class="card-text">${article.content_preview}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                ${categoriesHtml}
-                                ${keywordsHtml}
-                            </div>
-                            <span class="badge ${sentimentInfo.class} fs-6">${sentimentInfo.icon} ${sentimentInfo.text}</span>
-                        </div>
-                         <a href="${article.url}" target="_blank" class="stretched-link"></a>
-                    </div>
-                </div>
-            `;
-            articlesList.insertAdjacentHTML('beforeend', articleCard);
-        });
-    }
-
-    /**
-     * Hiển thị thanh phân trang
-     * @param {object} data - Đối tượng data từ API (chứa current_page, total_pages)
-     */
-    function displayPagination({ current_page, total_pages }) {
-        if (total_pages <= 1) {
-            paginationControls.innerHTML = '';
-            return;
-        }
-
-        let paginationHtml = '<ul class="pagination">';
-        // Nút Previous
-        paginationHtml += `<li class="page-item ${current_page === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${current_page - 1}">Trước</a></li>`;
-
-        // Các nút số trang
-        for (let i = 1; i <= total_pages; i++) {
-            paginationHtml += `<li class="page-item ${i === current_page ? 'active' : ''}">
-                <a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
-        }
-
-        // Nút Next
-        paginationHtml += `<li class="page-item ${current_page === total_pages ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${current_page + 1}">Sau</a></li>`;
-        
-        paginationHtml += '</ul>';
-        paginationControls.innerHTML = paginationHtml;
-    }
-    
-    /**
-     * Trả về thông tin hiển thị cho sắc thái
-     * @param {string} sentiment - 'positive', 'negative', hoặc 'neutral'
-     */
-    function getSentimentInfo(sentiment) {
-        switch (sentiment) {
-            case 'positive': return { text: 'Tích cực', class: 'bg-success-subtle text-success-emphasis', icon: '<i class="bi bi-emoji-smile"></i>' };
-            case 'negative': return { text: 'Tiêu cực', class: 'bg-danger-subtle text-danger-emphasis', icon: '<i class="bi bi-emoji-frown"></i>' };
-            default: return { text: 'Trung tính', class: 'bg-secondary-subtle text-secondary-emphasis', icon: '<i class="bi bi-emoji-neutral"></i>' };
-        }
-    }
-
-    /**
-     * Hàm debounce để tránh gọi API liên tục khi người dùng gõ tìm kiếm
-     */
-    function debounce(func, delay = 500) {
+    const debounce = (func, delay = 500) => {
         let timeout;
         return (...args) => {
             clearTimeout(timeout);
@@ -159,91 +43,280 @@ document.addEventListener('DOMContentLoaded', () => {
                 func.apply(this, args);
             }, delay);
         };
+    };
+
+    // =================================================================
+    // ==                 CÁC HÀM GỌI API (FETCH)                     ==
+    // =================================================================
+    async function fetchFromApi(endpoint, params = {}) {
+        const validParams = Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== null && v !== ''));
+        const urlParams = new URLSearchParams(validParams);
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}?${urlParams.toString()}`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Lỗi từ API');
+            return result;
+        } catch (error) {
+            console.error(`Lỗi khi tải từ ${endpoint}:`, error);
+            dom.alertContainer.innerHTML = `<div class="alert alert-danger">Không thể kết nối đến API. Vui lòng kiểm tra lại.</div>`;
+            return null;
+        }
     }
 
-    // ================== GÁN CÁC EVENT LISTENER ==================
-
-    // Tìm kiếm (với debounce)
-    searchInput.addEventListener('input', debounce(e => {
-        queryState.search = e.target.value;
-        queryState.page = 1; // Reset về trang 1 khi tìm kiếm
-        fetchAndDisplayArticles();
-    }));
-
-    // Lọc theo Sắc thái và Sắp xếp
-    [sentimentFilter, sortBy].forEach(el => {
-        el.addEventListener('change', () => {
-            queryState.sentiment = sentimentFilter.value;
-            queryState.sort_by = sortBy.value;
-            queryState.page = 1;
-            fetchAndDisplayArticles();
+    // =================================================================
+    // ==            CÁC HÀM HIỂN THỊ DỮ LIỆU (RENDER)                 ==
+    // =================================================================
+    function renderArticles(articles) {
+        dom.articlesList.innerHTML = '';
+        if (!articles || articles.length === 0) {
+            dom.articlesList.innerHTML = `<div class="alert alert-warning text-center">Không tìm thấy bài viết nào phù hợp.</div>`;
+            return;
+        }
+        articles.forEach(article => {
+            const categoryHtml = article.category ? `<span class="badge bg-primary-subtle text-primary-emphasis me-1 tag" data-type="category" data-id="${article.category.category_id}">${article.category.name}</span>` : '';
+            const keywordsHtml = (article.keywords || []).map(kw => `<span class="badge bg-secondary-subtle text-secondary-emphasis me-1 tag" data-type="keyword" data-id="${kw.keyword_id}">${kw.keyword_text}</span>`).join('');
+            
+            dom.articlesList.insertAdjacentHTML('beforeend', `
+                <div class="card article-card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">${article.title}</h5>
+                        <p class="card-subtitle mb-2 text-muted small">
+                            <strong>Nguồn:</strong> ${article.source?.source_name || 'N/A'} | 
+                            <strong>Ngày:</strong> ${new Date(article.published_at).toLocaleDateString('vi-VN')}
+                        </p>
+                        <p class="card-text small">${(article.content || '').substring(0, 200)}...</p>
+                        <div class="d-flex justify-content-between align-items-end mt-3">
+                            <div class="tags-container">${categoryHtml}${keywordsHtml}</div>
+                        </div>
+                        <a href="${article.url}" target="_blank" class="stretched-link" title="Đọc bài viết gốc"></a>
+                    </div>
+                </div>`);
         });
+    }
+
+    /**
+     * === CẢI TIẾN LỚN: HÀM PHÂN TRANG THÔNG MINH ===
+     * Hiển thị một số lượng trang giới hạn, có nút First, Prev, Next, Last và dấu ...
+     */
+    function renderPagination(paginationData) {
+        const { page: currentPage, pages: totalPages } = paginationData;
+        if (totalPages <= 1) {
+            dom.paginationControls.innerHTML = '';
+            return;
+        }
+
+        const createPageItem = (p, text = p, active = false, disabled = false) => 
+            `<li class="page-item ${active ? 'active' : ''} ${disabled ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${p}">${text}</a>
+            </li>`;
+
+        const createEllipsisItem = () => `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+
+        const windowSize = 2; // Số trang hiển thị ở mỗi bên của trang hiện tại
+        let paginationHtml = '<ul class="pagination pagination-sm">';
+
+        // Nút Previous
+        paginationHtml += createPageItem(currentPage - 1, '&laquo;', false, currentPage === 1);
+
+        // Nút trang đầu tiên
+        if (currentPage > windowSize + 1) {
+            paginationHtml += createPageItem(1);
+            paginationHtml += createEllipsisItem();
+        }
+
+        // Các trang ở giữa
+        for (let i = Math.max(1, currentPage - windowSize); i <= Math.min(totalPages, currentPage + windowSize); i++) {
+            paginationHtml += createPageItem(i, i, i === currentPage);
+        }
+
+        // Nút trang cuối cùng
+        if (currentPage < totalPages - windowSize) {
+             paginationHtml += createEllipsisItem();
+            paginationHtml += createPageItem(totalPages);
+        }
+        
+        // Nút Next
+        paginationHtml += createPageItem(currentPage + 1, '&raquo;', false, currentPage === totalPages);
+        paginationHtml += '</ul>';
+        dom.paginationControls.innerHTML = paginationHtml;
+    }
+
+
+    function renderFilterTags(container, items, type, nameField, idField) {
+        container.innerHTML = (items || []).map(item => `
+            <span class="badge tag filter-tag" data-type="${type}" data-id="${item[idField]}">${item[nameField]}</span>
+        `).join(' ');
+    }
+
+    function renderKeywordSuggestions(keywords) {
+        if (!keywords || keywords.length === 0) {
+            dom.keywordSuggestions.style.display = 'none';
+            return;
+        }
+        dom.keywordSuggestions.innerHTML = keywords.map(kw => 
+            `<a href="#" class="list-group-item list-group-item-action suggestion-item" data-id="${kw.keyword_id}">${kw.keyword_text}</a>`
+        ).join('');
+        dom.keywordSuggestions.style.display = 'block';
+    }
+
+    function updateActiveFilterUI() {
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            const { type, id } = tag.dataset;
+            const isActive = (type === 'category' && id == queryState.category_id);
+            tag.classList.toggle('active', isActive);
+        });
+        
+        if (!queryState.crawl_keyword_id) {
+           dom.keywordSearchInput.value = '';
+        }
+    }
+    
+    // =================================================================
+    // ==                    LOGIC XỬ LÝ CHÍNH                        ==
+    // =================================================================
+    async function fetchArticles() {
+        dom.articlesList.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+        dom.alertContainer.innerHTML = '';
+        
+        const params = {
+            page: queryState.page,
+            size: queryState.size,
+            sort_by: queryState.sort_by,
+            sort_order: queryState.sort_order,
+            search: queryState.search,
+            sentiment: queryState.sentiment,
+            category_id: queryState.category_id,
+            crawl_keyword_id: queryState.crawl_keyword_id,
+        };
+
+        const result = await fetchFromApi('/articles/', params);
+        
+        if (result && result.data && result.data.items) {
+            renderArticles(result.data.items);
+            renderPagination(result.data);
+        } else {
+            renderArticles([]);
+            renderPagination({ page: 1, pages: 0 });
+        }
+        updateActiveFilterUI();
+    }
+    
+    function handleFilterChange(updates) {
+        queryState = { ...queryState, ...updates, page: 1 };
+        fetchArticles();
+    }
+
+    // Đổi tên hàm cho rõ nghĩa
+    function handlePageChange(updates) {
+        queryState = { ...queryState, ...updates };
+        fetchArticles();
+    }
+
+    const debouncedKeywordSearch = debounce(async (searchText) => {
+        if (searchText.length < 2) {
+            renderKeywordSuggestions([]);
+            return;
+        }
+        const result = await fetchFromApi('/keywords/', { search: searchText, limit: 5 });
+        if (result && result.data) {
+            renderKeywordSuggestions(result.data);
+        }
+    }, 300);
+
+    // =================================================================
+    // ==           GÁN CÁC HÀM XỬ LÝ SỰ KIỆN (EVENT LISTENERS)        ==
+    // =================================================================
+    dom.articleSearchInput.addEventListener('input', debounce(e => handleFilterChange({ search: e.target.value })));
+    dom.keywordSearchInput.addEventListener('input', e => {
+        if (e.target.value === '') {
+            handleFilterChange({ crawl_keyword_id: null });
+        }
+        debouncedKeywordSearch(e.target.value);
+    });
+    
+    dom.keywordSuggestions.addEventListener('click', e => {
+        e.preventDefault();
+        const target = e.target.closest('.suggestion-item');
+        if (target) {
+            const keywordId = target.dataset.id;
+            const keywordText = target.textContent;
+            dom.keywordSearchInput.value = keywordText;
+            dom.keywordSuggestions.style.display = 'none';
+            handleFilterChange({ crawl_keyword_id: keywordId, category_id: null });
+        }
     });
 
-    // Thay đổi thứ tự sắp xếp
-    sortOrderBtn.addEventListener('click', () => {
-        const currentOrder = sortOrderBtn.dataset.order;
-        const newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
-        sortOrderBtn.dataset.order = newOrder;
-        sortOrderBtn.innerHTML = newOrder === 'desc' ? '<i class="bi bi-sort-down"></i>' : '<i class="bi bi-sort-up"></i>';
-        queryState.sort_order = newOrder;
-        queryState.page = 1;
-        fetchAndDisplayArticles();
-    });
+    document.addEventListener('click', e => {
+        const target = e.target.closest('a.page-link, span.tag');
+        if (!target) return;
 
-    // Click vào các thẻ tag (category/keyword)
-    articlesList.addEventListener('click', e => {
-        const target = e.target;
+        // Xử lý click cho phân trang
+        if (target.matches('.page-link[data-page]')) {
+            e.preventDefault();
+            // Không thực hiện hành động nếu nút bị vô hiệu hóa (disabled)
+            if (target.parentElement.classList.contains('disabled')) return;
+            handlePageChange({ page: parseInt(target.dataset.page) });
+        }
+
+        // Xử lý click cho TẤT CẢ các thẻ (tags)
         if (target.classList.contains('tag')) {
             e.preventDefault();
-            // Reset cả 2 trước khi set giá trị mới
-            queryState.category_id = null;
-            queryState.keyword_id = null;
+            const { type, id } = target.dataset;
+            const isActive = (type === 'category' && id == queryState.category_id) || (type === 'keyword' && id == queryState.crawl_keyword_id);
             
-            if (target.classList.contains('category-tag')) {
-                queryState.category_id = target.dataset.id;
-            } else if (target.classList.contains('keyword-tag')) {
-                queryState.keyword_id = target.dataset.id;
+            let updates = { category_id: null, crawl_keyword_id: null };
+            if (!isActive) {
+                if (type === 'category') updates.category_id = id;
+                else if (type === 'keyword') {
+                    updates.crawl_keyword_id = id;
+                    dom.keywordSearchInput.value = target.textContent;
+                }
             }
-            queryState.page = 1;
-            fetchAndDisplayArticles();
+            handleFilterChange(updates);
+        }
+        
+        // Ẩn suggestion box khi click ra ngoài
+        if (!dom.keywordSearchInput.contains(e.target) && !dom.keywordSuggestions.contains(e.target)) {
+            dom.keywordSuggestions.style.display = 'none';
         }
     });
 
-    // Click vào phân trang
-    paginationControls.addEventListener('click', e => {
-        e.preventDefault();
-        if (e.target.tagName === 'A' && e.target.dataset.page) {
-            const page = parseInt(e.target.dataset.page, 10);
-            if (page !== queryState.page) {
-                queryState.page = page;
-                fetchAndDisplayArticles();
-            }
-        }
-    });
-
-    // Nút xóa bộ lọc
-    resetFiltersBtn.addEventListener('click', () => {
+    dom.resetFiltersBtn.addEventListener('click', () => {
         queryState = {
-            ...queryState, // Giữ lại page size và sort order mặc định
-            search: '',
-            sentiment: '',
-            category_id: null,
-            keyword_id: null,
-            page: 1,
-            sort_by: 'published_at',
-            sort_order: 'desc'
+            search: '', sentiment: '', category_id: null, crawl_keyword_id: null,
+            sort_by: 'published_at', sort_order: 'desc', page: 1, size: 10
         };
-        // Cập nhật lại UI của form
-        searchInput.value = '';
-        sentimentFilter.value = '';
-        sortBy.value = 'published_at';
-        sortOrderBtn.dataset.order = 'desc';
-        sortOrderBtn.innerHTML = '<i class="bi bi-sort-down"></i>';
+        dom.articleSearchInput.value = '';
+        dom.sentimentFilter.value = '';
+        dom.sortBy.value = 'published_at';
+        dom.sortOrderBtn.dataset.order = 'desc';
+        dom.sortOrderBtn.innerHTML = '<i class="bi bi-sort-down"></i>';
+        fetchArticles();
+    });
+    
+    dom.sentimentFilter.addEventListener('change', () => handleFilterChange({ sentiment: dom.sentimentFilter.value }));
+    dom.sortBy.addEventListener('change', () => handleFilterChange({ sort_by: dom.sortBy.value }));
 
-        fetchAndDisplayArticles();
+    dom.sortOrderBtn.addEventListener('click', () => {
+        const newOrder = dom.sortOrderBtn.dataset.order === 'desc' ? 'asc' : 'desc';
+        dom.sortOrderBtn.dataset.order = newOrder;
+        dom.sortOrderBtn.innerHTML = newOrder === 'desc' ? '<i class="bi bi-sort-down"></i>' : '<i class="bi bi-sort-up"></i>';
+        handleFilterChange({ sort_order: newOrder });
     });
 
-    // ================== KHỞI CHẠY LẦN ĐẦU ==================
-    fetchAndDisplayArticles();
+    // =================================================================
+    // ==                    KHỞI TẠO ỨNG DỤNG                        ==
+    // =================================================================
+    async function initialize() {
+        const categoriesRes = await fetchFromApi('/categories/');
+        if (categoriesRes && categoriesRes.data) {
+            renderFilterTags(dom.categoryFilterList, categoriesRes.data, 'category', 'name', 'category_id');
+        }
+        fetchArticles();
+    }
+
+    initialize();
 });
