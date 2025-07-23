@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // THAY THẾ DÒNG DƯỚI ĐÂY BẰNG URL NGROK CỦA BẠN
     // Ví dụ: const API_BASE_URL = 'https://abcd-1234-efgh.ngrok-free.app/api/v1';
     // =================================================================
-    const API_BASE_URL = 'https://your-unique-ngrok-subdomain.ngrok-free.app/api/v1';
+    const API_BASE_URL = 'https://759d11ba55a7.ngrok-free.app/api/v1';
 
 
     // Lấy các phần tử HTML để tương tác
