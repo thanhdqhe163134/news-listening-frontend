@@ -11,13 +11,25 @@ function createFilterSidebar() {
                 </div>
             </div>
             
-            <div class="mb-3 position-relative">
+            <div class="mb-3">
+                <label for="source-filter" class="form-label fw-semibold">Lọc theo nguồn</label>
+                <select id="source-filter" class="form-select">
+                    <option value="" selected>Tất cả nguồn</option>
+                    </select>
+            </div>
+
+              <div class="mb-3 position-relative">
                 <label for="keyword-search-input" class="form-label fw-semibold">Lọc theo từ khóa</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-tags-fill"></i></span>
-                    <input type="text" id="keyword-search-input" class="form-control" placeholder="Gõ để tìm từ khóa...">
+                
+                <div id="selected-keyword-container" class="mb-2"></div>
+                
+                <div id="keyword-input-wrapper">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-tags-fill"></i></span>
+                        <input type="text" id="keyword-search-input" class="form-control" placeholder="Gõ để tìm từ khóa...">
+                    </div>
+                    <div id="keyword-suggestions" class="autocomplete-suggestions list-group"></div>
                 </div>
-                <div id="keyword-suggestions" class="autocomplete-suggestions list-group"></div>
             </div>
 
             <div class="mb-3">
@@ -32,13 +44,13 @@ function createFilterSidebar() {
 
             <div class="mb-4">
                  <label class="form-label fw-semibold">Sắp xếp</label>
-                <div class="input-group">
-                    <select id="sort-by" class="form-select">
-                        <option value="published_at">Ngày xuất bản</option>
-                        <option value="title">Tiêu đề</option>
-                    </select>
-                    <button id="sort-order-btn" class="btn btn-outline-secondary" data-order="desc"><i class="bi bi-sort-down"></i></button>
-                </div>
+                 <div class="input-group">
+                     <select id="sort-by" class="form-select">
+                         <option value="published_at">Ngày xuất bản</option>
+                         <option value="title">Tiêu đề</option>
+                     </select>
+                     <button id="sort-order-btn" class="btn btn-outline-secondary" data-order="desc"><i class="bi bi-sort-down"></i></button>
+                 </div>
             </div>
             
             <div class="d-grid mb-4">

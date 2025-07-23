@@ -9,8 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
         alertContainer: document.getElementById('alert-container'),
     };
 
-    // Các element của bộ lọc, sẽ được truy cập sau khi render
+    // DOM elements cho bộ lọc, sẽ được gán sau khi render layout
     let filterDom = {};
+    
+    // UI State: Lưu trữ cả ID và TEXT của các từ khóa đã chọn để dễ dàng render lại
+    let selectedKeywords = []; 
+
+    // Thư viện Tom Select sẽ được sử dụng để quản lý các dropdowns
+    let tomSelectInstances = {};
 
     // === RENDER FUNCTIONS ===
     function renderLayout() {
@@ -18,9 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.mainSidebar.innerHTML = createSidebar('dashboard');
         dom.filterSidebar.innerHTML = createFilterSidebar();
         
-        // Sau khi render, lấy các element của bộ lọc
+        // Gán các DOM elements của bộ lọc sau khi đã render
         filterDom = {
             articleSearchInput: document.getElementById('article-search-input'),
+            sourceFilter: document.getElementById('source-filter'), 
             keywordSearchInput: document.getElementById('keyword-search-input'),
             keywordSuggestions: document.getElementById('keyword-suggestions'),
             sentimentFilter: document.getElementById('sentiment-filter'),
@@ -28,15 +35,23 @@ document.addEventListener('DOMContentLoaded', () => {
             sortOrderBtn: document.getElementById('sort-order-btn'),
             resetFiltersBtn: document.getElementById('reset-filters-btn'),
             categoryFilterList: document.getElementById('category-filter-list'),
+            selectedKeywordContainer: document.getElementById('selected-keyword-container'),
+            keywordInputWrapper: document.getElementById('keyword-input-wrapper'),
         };
+    }
+
+    async function initializeTomSelects() {
+        tomSelectInstances.source = new TomSelect(filterDom.sourceFilter, {
+            placeholder: 'Chọn một nguồn...'
+        });
+        tomSelectInstances.sentiment = new TomSelect(filterDom.sentimentFilter, {});
+        tomSelectInstances.sortBy = new TomSelect(filterDom.sortBy, {});
     }
 
     async function fetchAndRenderArticles() {
         dom.articlesList.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
         dom.alertContainer.innerHTML = '';
-
         const result = await apiService.fetchArticles(queryState);
-        
         if (result && result.data && result.data.items) {
             dom.articlesList.innerHTML = result.data.items.map(createArticleCard).join('');
             dom.paginationControls.innerHTML = createPagination(result.data);
@@ -56,6 +71,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+     async function fetchAndRenderSources() {
+        const result = await apiService.fetchSources();
+        const sourceSelect = tomSelectInstances.source; 
+
+        if (result && result.data && sourceSelect) {
+            sourceSelect.clearOptions(); 
+
+            const validSources = result.data.filter(source => source.source_name !== 'string');
+            const sortedSources = validSources.sort((a, b) => a.source_name.localeCompare(b.source_name));
+            
+            sortedSources.forEach(source => {
+                sourceSelect.addOption({
+                    value: source.source_id,
+                    text: source.source_name
+                });
+            });
+        }
+    }
+
     function renderKeywordSuggestions(keywords) {
         if (!keywords || keywords.length === 0) {
             filterDom.keywordSuggestions.style.display = 'none';
@@ -65,6 +99,39 @@ document.addEventListener('DOMContentLoaded', () => {
             `<a href="#" class="list-group-item list-group-item-action suggestion-item" data-id="${kw.keyword_id}">${kw.keyword_text}</a>`
         ).join('');
         filterDom.keywordSuggestions.style.display = 'block';
+    }
+
+    // === CÁC HÀM QUẢN LÝ TAG TỪ KHÓA ===
+    function renderSelectedKeywordTags() {
+        if (selectedKeywords.length === 0) {
+            filterDom.selectedKeywordContainer.innerHTML = '';
+            return;
+        }
+        const tagsHtml = selectedKeywords.map(kw => `
+            <span class="badge text-bg-primary selected-keyword-tag me-1 mb-1">
+                ${kw.text}
+                <button type="button" class="btn-close" aria-label="Close" data-keyword-id-to-remove="${kw.id}"></button>
+            </span>
+        `).join('');
+        filterDom.selectedKeywordContainer.innerHTML = tagsHtml;
+    }
+
+    function addKeyword(keywordId, keywordText) {
+        if (!selectedKeywords.some(kw => kw.id.toString() === keywordId.toString())) {
+            selectedKeywords.push({ id: keywordId, text: keywordText });
+            updateStateAndFetch();
+        }
+    }
+
+    function removeKeyword(keywordId) {
+        selectedKeywords = selectedKeywords.filter(kw => kw.id.toString() !== keywordId.toString());
+        updateStateAndFetch();
+    }
+    
+    function updateStateAndFetch() {
+        const keywordIds = selectedKeywords.map(kw => kw.id);
+        renderSelectedKeywordTags();
+        updateQueryState({ crawl_keyword_id: keywordIds }, fetchAndRenderArticles);
     }
     
     // === EVENT HANDLERS ===
@@ -80,17 +147,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 300);
 
     function addEventListeners() {
-        // Lắng nghe sự kiện trên toàn bộ body để xử lý các element động
         document.body.addEventListener('click', e => {
             const tagTarget = e.target.closest('.tag');
             const pageLinkTarget = e.target.closest('a.page-link');
             const suggestionTarget = e.target.closest('.suggestion-item');
-            
+            const removeKeywordBtn = e.target.closest('.selected-keyword-tag .btn-close');
+
             if (tagTarget) {
                 e.preventDefault();
                 const { type, id } = tagTarget.dataset;
-                updateQueryState({ category_id: null, crawl_keyword_id: null }, () => {
-                     const updates = type === 'category' ? { category_id: id } : { crawl_keyword_id: id };
+                updateQueryState({ category_id: null, crawl_keyword_id: [] }, () => {
+                     const updates = type === 'category' ? { category_id: id } : { crawl_keyword_id: [id] };
                      updateQueryState(updates, fetchAndRenderArticles);
                 });
             }
@@ -101,18 +168,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 updatePageState({ page: parseInt(pageLinkTarget.dataset.page) }, fetchAndRenderArticles);
             }
             
-            if(suggestionTarget) {
+            if (suggestionTarget) {
                 e.preventDefault();
                 const keywordId = suggestionTarget.dataset.id;
                 const keywordText = suggestionTarget.textContent;
-                filterDom.keywordSearchInput.value = keywordText;
+                addKeyword(keywordId, keywordText);
+                filterDom.keywordSearchInput.value = '';
                 filterDom.keywordSuggestions.style.display = 'none';
-                updateQueryState({ crawl_keyword_id: keywordId, category_id: null }, fetchAndRenderArticles);
+            }
+
+            if (removeKeywordBtn) {
+                e.preventDefault();
+                const keywordIdToRemove = removeKeywordBtn.dataset.keywordIdToRemove;
+                removeKeyword(keywordIdToRemove);
             }
         });
         
-        // Các event listener cho bộ lọc
-        filterDom.articleSearchInput.addEventListener('input', debounce(e => updateQueryState({ search: e.target.value }, fetchAndRenderArticles)));
+        // Gán event cho các input lọc
+        filterDom.articleSearchInput.addEventListener('input', debounce(e => updateQueryState({ search: e.target.value }, fetchAndRenderArticles), 300));
+        filterDom.sourceFilter.addEventListener('change', () => updateQueryState({ source_id: filterDom.sourceFilter.value }, fetchAndRenderArticles));
         filterDom.keywordSearchInput.addEventListener('input', e => debouncedKeywordSearch(e.target.value));
         filterDom.sentimentFilter.addEventListener('change', () => updateQueryState({ sentiment: filterDom.sentimentFilter.value }, fetchAndRenderArticles));
         filterDom.sortBy.addEventListener('change', () => updateQueryState({ sort_by: filterDom.sortBy.value }, fetchAndRenderArticles));
@@ -123,22 +197,37 @@ document.addEventListener('DOMContentLoaded', () => {
             updateQueryState({ sort_order: newOrder }, fetchAndRenderArticles);
         });
 
+        // Cập nhật nút Reset để xóa tất cả các bộ lọc
         filterDom.resetFiltersBtn.addEventListener('click', () => {
-            resetQueryState(fetchAndRenderArticles);
-            // Reset UI
+            // 1. Reset state của API
+            resetQueryState(); 
+            
+            // 2. Reset state UI cho các từ khóa
+            selectedKeywords = []; 
+            renderSelectedKeywordTags();
+
+            // 3. Reset giao diện của các ô input thường
             filterDom.articleSearchInput.value = '';
             filterDom.keywordSearchInput.value = '';
-            filterDom.sentimentFilter.value = '';
-            filterDom.sortBy.value = 'published_at';
+            
+            // 4. Dùng API của TomSelect để reset các dropdown
+            tomSelectInstances.source.clear();
+            tomSelectInstances.sentiment.clear();
+            tomSelectInstances.sortBy.setValue('published_at'); 
+            
+            // 5. Tải lại dữ liệu với state đã được reset
+            fetchAndRenderArticles();
         });
     }
 
     // === INITIALIZATION ===
     function initialize() {
-        renderLayout();
-        addEventListeners();
+        renderLayout(); 
+        initializeTomSelects(); 
+        addEventListeners(); 
         fetchAndRenderArticles();
         fetchAndRenderCategories();
+        fetchAndRenderSources(); 
     }
 
     initialize();
