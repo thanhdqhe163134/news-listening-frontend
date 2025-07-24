@@ -42,15 +42,24 @@ function createFilterSidebar() {
                 </select>
             </div>
 
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Lọc theo ngày xuất bản</label>
+                <div class="input-group">
+                    <input type="date" id="start-date-filter" class="form-control" placeholder="Ngày bắt đầu">
+                    <span class="input-group-text">-</span>
+                    <input type="date" id="end-date-filter" class="form-control" placeholder="Ngày kết thúc">
+                </div>
+            </div>
+
             <div class="mb-4">
-                 <label class="form-label fw-semibold">Sắp xếp</label>
-                 <div class="input-group">
-                     <select id="sort-by" class="form-select">
-                         <option value="published_at">Ngày xuất bản</option>
-                         <option value="title">Tiêu đề</option>
-                     </select>
-                     <button id="sort-order-btn" class="btn btn-outline-secondary" data-order="desc"><i class="bi bi-sort-down"></i></button>
-                 </div>
+                   <label class="form-label fw-semibold">Sắp xếp</label>
+                   <div class="input-group">
+                        <select id="sort-by" class="form-select">
+                            <option value="published_at">Ngày xuất bản</option>
+                            <option value="title">Tiêu đề</option>
+                        </select>
+                        <button id="sort-order-btn" class="btn btn-outline-secondary" data-order="desc"><i class="bi bi-sort-down"></i></button>
+                   </div>
             </div>
             
             <div class="d-grid mb-4">
