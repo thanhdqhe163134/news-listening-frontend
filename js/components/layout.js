@@ -8,7 +8,8 @@ function createHeader(title) {
 
 function createSidebar(activePage = 'dashboard') {
     const pages = [
-        { id: 'dashboard', href: 'index.html', icon: 'bi-grid-fill', text: 'Dashboard' },
+        { id: 'index', href: 'index.html', icon: 'bi-grid-fill', text: 'Dashboard' },
+        { id: 'news', href: 'news.html', icon: 'bi-newspaper', text: 'Tin Tức' },
         { id: 'keywords', href: 'keywords.html', icon: 'bi-tags-fill', text: 'Quản lý Từ khóa' },
         { id: 'categories', href: 'categories.html', icon: 'bi-bookmark-fill', text: 'Quản lý Danh mục' },
         { id: 'sources', href: 'sources.html', icon: 'bi-newspaper', text: 'Quản lý Nguồn tin' },

@@ -41,14 +41,29 @@ function createArticleCard(article) {
     // Create the sentiment indicator HTML
     const sentimentIndicatorHtml = createSentimentIndicator(article.sentiment);
 
+    // Format published_at and crawl_date
+    const publishedDate = article.published_at ? new Date(article.published_at) : null;
+    const crawlDate = article.crawl_date ? new Date(article.crawl_date) : null;
+
+    const publishedDateString = publishedDate ? publishedDate.toLocaleDateString('vi-VN') : 'N/A';
+    const crawlDateString = crawlDate ? crawlDate.toLocaleDateString('vi-VN') : 'N/A';
+
+    // Determine if it's "new news"
+    let newNewsIndicatorHtml = '';
+    // Giả sử "gần với" là cùng ngày.
+    if (publishedDate && crawlDate && publishedDate.toDateString() === crawlDate.toDateString()) {
+        newNewsIndicatorHtml = '<div class="new-news-indicator"><span>Tin mới</span></div>'; // Thêm chữ "Tin mới" vào đây
+    }
+
     return `
-        <div class="card article-card shadow-sm">
-            ${sentimentIndicatorHtml}
+        <div class="card article-card shadow-sm position-relative">
+            ${newNewsIndicatorHtml} ${sentimentIndicatorHtml}
             <div class="card-body">
                 <h5 class="card-title">${article.title}</h5>
                 <p class="card-subtitle mb-2 text-muted small">
                     <strong>Nguồn:</strong> ${article.source?.source_name || 'N/A'} | 
-                    <strong>Ngày:</strong> ${new Date(article.published_at).toLocaleDateString('vi-VN')}
+                    <strong>Ngày xuất bản:</strong> ${publishedDateString} |
+                    <strong>Ngày cập nhật:</strong> ${crawlDateString}
                 </p>
                 <p class="card-text small">${(article.content || '').substring(0, 200)}...</p>
                 <div class="d-flex justify-content-between align-items-end mt-3">

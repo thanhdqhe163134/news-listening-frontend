@@ -8,8 +8,8 @@
         {
             "type": "msedge",
             "request": "launch",
-            "name": "Open index.html",
-            "file": "c:\\Users\\admin\\Downloads\\news-listening-frontend\\index.html"
+            "name": "Open news.html",
+            "file": "c:\\Users\\admin\\Downloads\\news-listening-frontend\\news.html"
         }
     ]
 }

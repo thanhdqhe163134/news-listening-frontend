@@ -262,3 +262,51 @@ body {
     text-decoration-style: solid;
     color: #0d6efd;
 }
+
+/* Đảm bảo .article-card có position: relative; */
+.article-card {
+    position: relative; /* Đảm bảo đã có */
+    overflow: hidden;   /* Đảm bảo đã có, để cắt bỏ các phần tử con thò ra ngoài */
+    /* Điều chỉnh padding để nội dung không bị che bởi indicator */
+    padding-top: 30px;  /* Tăng padding-top để chừa chỗ cho indicator */
+    padding-left: 15px; /* Giữ padding-left hoặc điều chỉnh nếu cần */
+}
+
+/* Kiểu cho indicator "Tin mới" có chữ bên trong */
+.new-news-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80px;   /* Tăng chiều rộng để vừa chữ "Tin mới" */
+    height: 30px;  /* Tăng chiều cao */
+    background-color: #28a745; /* Màu xanh lá cây (Bootstrap success color) */
+    color: white; /* Màu chữ */
+    display: flex; /* Dùng flexbox để căn giữa chữ */
+    align-items: center; /* Căn giữa theo chiều dọc */
+    justify-content: center; /* Căn giữa theo chiều ngang */
+    font-size: 0.85em; /* Kích thước chữ */
+    font-weight: bold; /* Chữ đậm */
+    z-index: 10; /* Đảm bảo nó nằm trên các nội dung khác */
+    /* Tùy chọn: Thêm bo tròn góc dưới bên phải nếu muốn */
+    /* border-bottom-right-radius: 5px; */
+}
+
+/* Kiểu cho chấm tròn sắc thái, điều chỉnh vị trí để không bị che */
+.sentiment-indicator {
+    position: absolute;
+    top: 8px; /* Giữ nguyên hoặc điều chỉnh nếu cần */
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    /* ... các style khác của sentiment indicator ... */
+}
+.sentiment-positive {
+    background-color: #28a745; /* Green */
+}
+.sentiment-negative {
+    background-color: #dc3545; /* Red */
+}
+.sentiment-neutral {
+    background-color: #6c757d; /* Gray */
+}

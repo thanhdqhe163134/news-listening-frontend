@@ -155,5 +155,29 @@ const apiService = {
 
     fetchTopKeywords(limit = 10) {
         return this._fetch('/dashboard/top-keywords', { limit });
+    },
+
+    fetchCategory(categoryId) {
+        return this._fetch(`/categories/${categoryId}`);
+    },
+
+    createCategory(data) {
+        return this._request('/categories/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    updateCategory(categoryId, data) {
+        return this._request(`/categories/${categoryId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+
+    deleteCategory(categoryId) {
+        return this._request(`/categories/${categoryId}`, {
+            method: 'DELETE',
+        });
     }
 };
