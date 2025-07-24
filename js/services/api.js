@@ -65,8 +65,8 @@ const apiService = {
     },
 
     // --- APIs cho Categories ---
-    fetchCategories() {
-        return this._fetch('/categories/');
+    fetchCategories(params) {
+        return this._fetch('/categories/', params); // Truyền 'params' vào _fetch
     },
 
     // --- APIs cho Sources ---
@@ -93,8 +93,8 @@ const apiService = {
 
     /**
      * Cập nhật một từ khóa đã có.
-     * @param {number|string} keywordId - ID của từ khóa cần cập nhật.
-     * @param {object} data - Dữ liệu cập nhật { keyword_text, category_id }.
+     * @param {number|string} keywordId 
+     * @param {object} data
      * @returns {Promise<object>}
      */
     updateKeyword(keywordId, data) {
@@ -111,6 +111,25 @@ const apiService = {
      */
     deleteKeyword(keywordId) {
         return this._request(`/keywords/${keywordId}`, {
+            method: 'DELETE',
+        });
+    },
+    createCategory(data) {
+        return this._request('/categories/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    updateCategory(categoryId, data) {
+        return this._request(`/categories/${categoryId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+
+    deleteCategory(categoryId) {
+        return this._request(`/categories/${categoryId}`, {
             method: 'DELETE',
         });
     }
