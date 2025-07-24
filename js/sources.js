@@ -7,10 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
         paginationControls: document.getElementById('pagination-controls'),
         addSourceBtn: document.getElementById('addSourceBtn'),
         searchInput: document.getElementById('searchInput'),
+        filterBy: document.getElementById('filterBy'),
+        filterValueContainer: document.getElementById('filter-value-container'),
+        platformFilter: document.getElementById('platformFilter'),
+        sourceTypeFilter: document.getElementById('sourceTypeFilter'),
+        statusFilter: document.getElementById('statusFilter'),
+        resetFiltersBtn: document.getElementById('resetFiltersBtn'),
         alertContainer: document.getElementById('alert-container'),
-        idColumnHeader: document.querySelector('.table-sources thead th:nth-child(1)'),
-        nameColumnHeader: document.querySelector('.table-sources thead th:nth-child(2)'),
-        lastCrawledAtColumnHeader: document.querySelector('.table-sources thead th:nth-child(7)'),
+        sortableHeaders: document.querySelectorAll('.sortable-header'),
     };
 
     const modalElement = document.getElementById('sourceModal');
@@ -26,9 +30,31 @@ document.addEventListener('DOMContentLoaded', () => {
         status: document.getElementById('status'),
     };
 
-    let masterSourceList = []; // Lưu trữ toàn bộ danh sách nguồn tin
-    let displayedSources = []; // Lưu trữ danh sách đã được lọc và sắp xếp
-    let state = { page: 1, size: 10, sortColumn: 'source_id', sortDirection: 'asc' };
+    // Application state
+    let state = {
+        page: 1,
+        size: 10,
+        search: '',
+        sort_by: 'source_id',
+        sort_order: 'asc',
+        filter_by: '',
+        filter_value: ''
+    };
+    
+    // Mappings for display names
+    const platformDisplayNames = {
+        'News': 'Báo chí',
+        'Facebook': 'Facebook',
+        'PublicProcurement': 'Mua sắm công',
+        'Shopee': 'Shopee',
+        'Blog': 'Blog'
+    };
+    
+    // NEW: Mapping for status names
+    const statusDisplayNames = {
+        'ACTIVE': 'Đang hoạt động',
+        'INACTIVE': 'Không hoạt động'
+    };
 
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
@@ -46,136 +72,90 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateSortIcons() {
-        document.querySelectorAll('.sort-icon').forEach(icon => icon.remove());
-        let currentHeaderElement;
-        switch (state.sortColumn) {
-            case 'source_id': currentHeaderElement = dom.idColumnHeader; break;
-            case 'source_name': currentHeaderElement = dom.nameColumnHeader; break;
-            case 'last_crawled_at': currentHeaderElement = dom.lastCrawledAtColumnHeader; break;
-        }
-        if (currentHeaderElement) {
-            const iconClass = state.sortDirection === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+        dom.sortableHeaders.forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+            header.querySelector('.sort-icon')?.remove();
+        });
+        const activeHeader = document.querySelector(`.sortable-header[data-sort="${state.sort_by}"]`);
+        if (activeHeader) {
+            const iconClass = state.sort_order === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
             const icon = document.createElement('i');
             icon.classList.add('bi', iconClass, 'ms-2', 'sort-icon');
-            currentHeaderElement.appendChild(icon);
+            activeHeader.appendChild(icon);
         }
     }
 
-    function renderTable(sourcesOnPage) {
-        if (!sourcesOnPage || sourcesOnPage.length === 0) {
-            const searchText = dom.searchInput.value;
-            const message = searchText ? `Không tìm thấy nguồn tin nào cho "${searchText}".` : 'Chưa có nguồn tin nào.';
+    function renderTable(sources, total) {
+        if (!sources || sources.length === 0) {
+            const message = state.search || state.filter_value ? `Không tìm thấy kết quả phù hợp.` : 'Chưa có nguồn tin nào.';
             dom.tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">${message}</td></tr>`;
             return;
         }
 
-        const rowsHtml = sourcesOnPage.map(src => {
-            const statusBadge = src.status === 'ACTIVE'
-                ? `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">ACTIVE</span>`
-                : `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">INACTIVE</span>`;
+        const rowsHtml = sources.map(src => {
+            // UPDATED: Use statusDisplayNames for the text inside the badge
+            const statusText = statusDisplayNames[src.status] || src.status;
+            const statusBadge = `<a href="#" class="badge rounded-pill text-decoration-none filter-link ${src.status === 'ACTIVE' ? 'bg-success-subtle text-success-emphasis' : 'bg-danger-subtle text-danger-emphasis'}" data-filter-by="status" data-filter-value="${src.status}">${statusText}</a>`;
+            
+            const platformLink = `<a href="#" class="filter-link" data-filter-by="platform" data-filter-value="${src.platform}">${platformDisplayNames[src.platform] || src.platform}</a>`;
+            const typeLink = `<a href="#" class="filter-link" data-filter-by="source_type" data-filter-value="${src.source_type}">${src.source_type}</a>`;
 
-            // Sử dụng source_url thay cho home_url để khớp với API response mới
             return `
             <tr>
                 <th scope="row" class="text-center">${src.source_id}</th>
-                <td class="fw-medium">${src.source_name}</td>
-                <td><a href="${src.source_url}" target="_blank" rel="noopener noreferrer" title="${src.source_url}">${src.source_url}</a></td>
-                <td class="text-center">${src.source_type}</td>
-                <td class="text-center">${src.platform}</td>
+                <td><a href="${src.source_url}" target="_blank" rel="noopener noreferrer" title="${src.source_url}">${src.source_name}</a></td>
+                <td class="text-center"><span class="badge bg-info-subtle text-info-emphasis">${src.article_count || 0}</span></td>
+                <td class="text-center">${typeLink}</td>
+                <td class="text-center">${platformLink}</td>
                 <td class="text-center">${statusBadge}</td>
                 <td class="text-center small">${formatDate(src.last_crawled_at)}</td>
                 <td class="text-center action-btn-group">
-                    <button class="btn btn-sm btn-outline-primary action-btn edit-btn" title="Sửa"
-                            data-id="${src.source_id}"
-                            data-name="${src.source_name}"
-                            data-url="${src.source_url}"
-                            data-type="${src.source_type}"
-                            data-platform="${src.platform}"
-                            data-status="${src.status}">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger action-btn delete-btn" title="Xóa"
-                            data-id="${src.source_id}"
-                            data-name="${src.source_name}">
-                        <i class="bi bi-trash3-fill"></i>
-                    </button>
+                    <button class="btn btn-sm btn-outline-primary action-btn edit-btn" title="Sửa" data-id="${src.source_id}"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-danger action-btn delete-btn" title="Xóa" data-id="${src.source_id}" data-name="${src.source_name}"><i class="bi bi-trash3-fill"></i></button>
                 </td>
             </tr>
         `}).join('');
         dom.tableBody.innerHTML = rowsHtml;
-        updateSortIcons();
     }
-
-    function processAndRenderSources() {
-        const searchTerm = dom.searchInput.value.toLowerCase().trim();
-
-        // Lọc từ danh sách gốc (masterSourceList)
-        displayedSources = masterSourceList.filter(src =>
-            src.source_name.toLowerCase().includes(searchTerm) ||
-            src.source_url.toLowerCase().includes(searchTerm)
-        );
-
-        applySorting(); // Sắp xếp danh sách đã lọc
-
-        // Phân trang trên danh sách đã lọc và sắp xếp
-        const start = (state.page - 1) * state.size;
-        const end = start + state.size;
-        const sourcesOnPage = displayedSources.slice(start, end);
-
-        renderTable(sourcesOnPage);
-        dom.paginationControls.innerHTML = createPagination({
-            page: state.page,
-            pages: Math.ceil(displayedSources.length / state.size),
-        });
-    }
-
 
     function showAlert(message, type = 'success') {
-        const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>`;
+        const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
         dom.alertContainer.innerHTML = alertHtml;
     }
 
     // === API & DATA LOGIC ===
-    async function fetchAllSources() {
+    async function fetchAndRenderSources() {
         dom.tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-5"><div class="spinner-border text-primary"></div></td></tr>`;
         try {
-            const result = await apiService.fetchSources(); // Fetch all sources without any params
+            const params = { ...state };
+            if (!params.filter_by || !params.filter_value) {
+                delete params.filter_by;
+                delete params.filter_value;
+            }
+            const result = await apiService.fetchSources(params);
             if (result && result.success && Array.isArray(result.data)) {
-                masterSourceList = result.data;
-                processAndRenderSources(); // Initial render
+                const totalItems = result.total !== undefined ? result.total : result.data.length;
+                renderTable(result.data, totalItems);
+                dom.paginationControls.innerHTML = createPagination({ page: state.page, pages: Math.ceil(totalItems / state.size) });
             } else {
-                masterSourceList = [];
-                processAndRenderSources();
+                renderTable([], 0);
+                dom.paginationControls.innerHTML = '';
             }
         } catch (error) {
-            showAlert('Không thể tải dữ liệu nguồn tin. Vui lòng kiểm tra lại API.', 'danger');
-            masterSourceList = [];
-            processAndRenderSources();
+            showAlert(`Không thể tải dữ liệu: ${error.message}`, 'danger');
+            renderTable([], 0);
+            dom.paginationControls.innerHTML = '';
+        } finally {
+            updateSortIcons();
         }
     }
-
-    function applySorting() {
-        displayedSources.sort((a, b) => {
-            let valA, valB;
-            switch (state.sortColumn) {
-                case 'source_name':
-                    valA = a.source_name.toLowerCase();
-                    valB = b.source_name.toLowerCase();
-                    return state.sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                case 'last_crawled_at':
-                    valA = a.last_crawled_at ? new Date(a.last_crawled_at).getTime() : 0;
-                    valB = b.last_crawled_at ? new Date(b.last_crawled_at).getTime() : 0;
-                    break;
-                default:
-                    valA = a.source_id;
-                    valB = b.source_id;
-                    break;
-            }
-            return state.sortDirection === 'asc' ? valA - valB : valB - valA;
-        });
+    
+    async function fetchSourceForEdit(id) {
+        const result = await apiService.fetchSources({limit: 1000}); 
+        if(result && result.data) {
+            return result.data.find(s => s.source_id.toString() === id.toString());
+        }
+        return null;
     }
 
     async function handleFormSubmit(event) {
@@ -188,21 +168,39 @@ document.addEventListener('DOMContentLoaded', () => {
             platform: modalForm.platform.value,
             status: modalForm.status.value,
         };
-
         try {
-            const result = id
-                ? await apiService.updateSource(id, data)
-                : await apiService.createSource(data);
-
+            const result = id ? await apiService.updateSource(id, data) : await apiService.createSource(data);
             if (result && result.success) {
                 showAlert(result.message || 'Thao tác thành công!');
                 sourceModal.hide();
-                fetchAllSources(); // Tải lại toàn bộ dữ liệu
+                fetchAndRenderSources();
             } else {
                 showAlert(result?.message || 'Có lỗi xảy ra', 'danger');
             }
         } catch (error) {
             showAlert(error.message, 'danger');
+        }
+    }
+    
+    function updateFilterValueUI() {
+        const filterType = dom.filterBy.value;
+        dom.platformFilter.classList.add('d-none');
+        dom.sourceTypeFilter.classList.add('d-none');
+        dom.statusFilter.classList.add('d-none');
+        
+        let activeFilterDropdown = null;
+
+        if (filterType === 'platform') {
+            activeFilterDropdown = dom.platformFilter;
+        } else if (filterType === 'source_type') {
+            activeFilterDropdown = dom.sourceTypeFilter;
+        } else if (filterType === 'status') {
+             activeFilterDropdown = dom.statusFilter;
+        }
+
+        if(activeFilterDropdown) {
+             activeFilterDropdown.classList.remove('d-none');
+             activeFilterDropdown.value = state.filter_value;
         }
     }
 
@@ -215,20 +213,25 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceModal.show();
         });
 
-        dom.tableBody.addEventListener('click', e => {
+        dom.tableBody.addEventListener('click', async (e) => {
             const editBtn = e.target.closest('.edit-btn');
             if (editBtn) {
-                modalForm.form.reset();
-                modalForm.title.textContent = 'Cập nhật Nguồn tin';
-                modalForm.sourceId.value = editBtn.dataset.id;
-                modalForm.sourceName.value = editBtn.dataset.name;
-                modalForm.sourceUrl.value = editBtn.dataset.url;
-                modalForm.sourceType.value = editBtn.dataset.type;
-                modalForm.platform.value = editBtn.dataset.platform;
-                modalForm.status.value = editBtn.dataset.status;
-                sourceModal.show();
+                const source = await fetchSourceForEdit(editBtn.dataset.id);
+                if (source) {
+                    modalForm.form.reset();
+                    modalForm.title.textContent = 'Cập nhật Nguồn tin';
+                    modalForm.sourceId.value = source.source_id;
+                    modalForm.sourceName.value = source.source_name;
+                    modalForm.sourceUrl.value = source.source_url;
+                    modalForm.sourceType.value = source.source_type;
+                    modalForm.platform.value = source.platform;
+                    modalForm.status.value = source.status;
+                    sourceModal.show();
+                } else {
+                    showAlert('Không tìm thấy thông tin nguồn để sửa.', 'danger');
+                }
             }
-
+            
             const deleteBtn = e.target.closest('.delete-btn');
             if (deleteBtn) {
                 const sourceId = deleteBtn.dataset.id;
@@ -237,56 +240,93 @@ document.addEventListener('DOMContentLoaded', () => {
                     apiService.deleteSource(sourceId).then(result => {
                         if (result && result.success) {
                             showAlert('Xóa nguồn tin thành công!');
-                            fetchAllSources(); // Tải lại toàn bộ dữ liệu
+                            fetchAndRenderSources();
                         } else {
                             showAlert(result?.message || 'Có lỗi xảy ra khi xóa', 'danger');
                         }
                     });
                 }
             }
+
+            const filterLink = e.target.closest('.filter-link');
+            if(filterLink) {
+                e.preventDefault();
+                state.page = 1;
+                state.filter_by = filterLink.dataset.filterBy;
+                state.filter_value = filterLink.dataset.filterValue;
+                dom.filterBy.value = state.filter_by;
+                updateFilterValueUI();
+                fetchAndRenderSources();
+            }
+        });
+        
+        dom.searchInput.addEventListener('input', debounce(() => {
+            state.page = 1;
+            state.search = dom.searchInput.value.trim();
+            fetchAndRenderSources();
+        }, 300));
+        
+        dom.filterBy.addEventListener('change', () => {
+            state.page = 1;
+            state.filter_by = dom.filterBy.value;
+            state.filter_value = '';
+            updateFilterValueUI();
+            if(!state.filter_by) {
+                fetchAndRenderSources();
+            }
         });
 
-        dom.searchInput.addEventListener('input', debounce(() => {
-            state.page = 1; // Reset về trang đầu khi tìm kiếm
-            processAndRenderSources();
-        }, 300));
+        [dom.platformFilter, dom.sourceTypeFilter, dom.statusFilter].forEach(el => {
+            el.addEventListener('change', (e) => {
+                state.page = 1;
+                state.filter_value = e.target.value;
+                fetchAndRenderSources();
+            });
+        });
+
+        dom.resetFiltersBtn.addEventListener('click', () => {
+            state.search = '';
+            state.filter_by = '';
+            state.filter_value = '';
+            state.page = 1;
+            dom.searchInput.value = '';
+            dom.filterBy.value = '';
+            updateFilterValueUI();
+            fetchAndRenderSources();
+        });
 
         dom.paginationControls.addEventListener('click', e => {
             const pageLink = e.target.closest('a.page-link');
-            if (pageLink && pageLink.dataset.page) {
+            if (pageLink && !pageLink.parentElement.classList.contains('disabled')) {
                 e.preventDefault();
                 state.page = parseInt(pageLink.dataset.page, 10);
-                processAndRenderSources();
+                fetchAndRenderSources();
             }
         });
 
         modalForm.form.addEventListener('submit', handleFormSubmit);
 
-        const sortableHeaders = {
-            'source_id': dom.idColumnHeader,
-            'source_name': dom.nameColumnHeader,
-            'last_crawled_at': dom.lastCrawledAtColumnHeader,
-        };
-        for (const [column, header] of Object.entries(sortableHeaders)) {
-            header.addEventListener('click', () => handleSortClick(column));
-        }
+        dom.sortableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const sortColumn = header.dataset.sort;
+                if (state.sort_by === sortColumn) {
+                    state.sort_order = state.sort_order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.sort_by = sortColumn;
+                    state.sort_order = 'asc';
+                }
+                state.page = 1;
+                fetchAndRenderSources();
+            });
+        });
     }
 
-    function handleSortClick(column) {
-        if (state.sortColumn === column) {
-            state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            state.sortColumn = column;
-            state.sortDirection = 'asc';
-        }
-        state.page = 1;
-        processAndRenderSources();
-    }
-
+    // === INITIALIZATION ===
     function initialize() {
         renderLayout();
         setupEventListeners();
-        fetchAllSources();
+        updateFilterValueUI();
+        fetchAndRenderSources();
     }
 
     initialize();

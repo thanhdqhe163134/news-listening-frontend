@@ -235,3 +235,30 @@ body {
 #categoriesTableBody td {
     vertical-align: middle;
 }
+
+.table-sources th, .table-categories th, .table-keywords th {
+    vertical-align: middle;
+}
+
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.sortable-header:hover {
+    background-color: #e9ecef;
+}
+
+.filter-link {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    color: inherit;
+    transition: color 0.2s;
+}
+
+.filter-link:hover {
+    text-decoration-style: solid;
+    color: #0d6efd;
+}
