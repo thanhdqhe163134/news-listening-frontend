@@ -113,5 +113,27 @@ const apiService = {
         return this._request(`/keywords/${keywordId}`, {
             method: 'DELETE',
         });
+    },
+
+     // --- APIs cho Sources (CRUD) ---
+    fetchSources(params) {
+        return this._fetch('/sources/', params);
+    },
+    createSource(data) {
+        return this._request('/sources/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+    updateSource(sourceId, data) {
+        return this._request(`/sources/${sourceId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+    deleteSource(sourceId) {
+        return this._request(`/sources/${sourceId}`, {
+            method: 'DELETE',
+        });
     }
 };
