@@ -1,7 +1,15 @@
 function createHeader(title) {
+    const crawlButtonHtml = title === 'Dashboard' 
+        ? `<button id="crawl-articles-btn" class="btn btn-primary">
+               <i class="bi bi-arrow-clockwise me-1"></i>
+               Cập nhật dữ liệu
+           </button>`
+        : '';
+
     return `
-        <div class="bg-white p-3 shadow-sm border-bottom">
+        <div class="bg-white p-3 shadow-sm border-bottom d-flex justify-content-between align-items-center">
             <h1 class="h4 mb-0">${title}</h1>
+            ${crawlButtonHtml}
         </div>
     `;
 }

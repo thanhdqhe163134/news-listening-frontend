@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dom = {
         header: document.getElementById('header-container'),
         mainSidebar: document.getElementById('main-sidebar-container'),
+        alertContainer: document.getElementById('alert-container'),
         statsContainer: document.getElementById('stats-container'),
         sentimentOverTimeCanvas: document.getElementById('sentimentOverTimeChart'),
         sentimentDistributionCanvas: document.getElementById('sentimentDistributionChart'),
@@ -14,9 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // To hold the chart instances for updates/destruction
-    let sentimentOverTimeChart, topCategoriesChart, topKeywordsChart;
+    let sentimentOverTimeChart, topCategoriesChart, topKeywordsChart, sentimentDistributionChart;
 
     // === RENDER FUNCTIONS ===
+
+    function showAlert(message, type = 'success') {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+        dom.alertContainer.innerHTML = alertHtml;
+    }
 
     function renderLayout() {
         dom.header.innerHTML = createHeader('Dashboard');
@@ -48,7 +58,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSentimentDistributionChart(distribution) {
         if (!dom.sentimentDistributionCanvas) return;
-        new Chart(dom.sentimentDistributionCanvas, {
+        
+        // --- FIX IS HERE ---
+        // Destroy the previous chart instance if it exists
+        if (sentimentDistributionChart) {
+            sentimentDistributionChart.destroy();
+        }
+        
+        sentimentDistributionChart = new Chart(dom.sentimentDistributionCanvas, {
             type: 'doughnut',
             data: {
                 labels: ['Tích cực', 'Tiêu cực', 'Trung tính'],
@@ -131,6 +148,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // === DATA FETCH AND UPDATE LOGIC ===
+    async function refreshAllData() {
+        try {
+            // Fetch data for stat cards and distribution chart
+            const [stats, distribution] = await Promise.all([
+                apiService.fetchDashboardStats(),
+                apiService.fetchSentimentDistribution()
+            ]);
+
+            renderStatsCards(stats);
+            renderSentimentDistributionChart(distribution);
+
+            // Refresh other charts
+            updateSentimentOverTimeChart(document.querySelector('.sentiment-period-btn.active').dataset.period);
+            updateTopCategories(dom.topCategoriesLimitSelect.value);
+            updateTopKeywords(dom.topKeywordsLimitSelect.value);
+
+        } catch (error) {
+            showAlert(`Lỗi khi làm mới dữ liệu: ${error.message}`, 'danger');
+        }
+    }
+
 
     async function updateSentimentOverTimeChart(period = 'day') {
         try {
@@ -200,6 +238,32 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.topKeywordsLimitSelect.addEventListener('change', (e) => {
             updateTopKeywords(e.target.value);
         });
+        
+        const crawlBtn = document.getElementById('crawl-articles-btn');
+        if (crawlBtn) {
+            crawlBtn.addEventListener('click', async () => {
+                const originalHtml = crawlBtn.innerHTML;
+                crawlBtn.disabled = true;
+                crawlBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...`;
+
+                try {
+                    const result = await apiService.crawlArticles();
+                    showAlert(result.message || 'Yêu cầu cập nhật đã được gửi thành công! Dữ liệu sẽ được làm mới sau giây lát.', 'success');
+                    
+                    setTimeout(() => {
+                        refreshAllData();
+                    }, 3000); 
+                } catch (error) {
+                    showAlert(error.message, 'danger');
+                } finally {
+                    // Restore button after a delay to prevent spamming
+                    setTimeout(() => {
+                        crawlBtn.disabled = false;
+                        crawlBtn.innerHTML = originalHtml;
+                    }, 3000);
+                }
+            });
+        }
     }
 
     // === INITIALIZATION ===
@@ -208,9 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
 
         dom.statsContainer.innerHTML = '<div class="text-center p-5"><div class="spinner-border"></div></div>';
-
+        
+        // Initial load
         try {
-            // Fetch data for static charts first
             const [stats, distribution] = await Promise.all([
                 apiService.fetchDashboardStats(),
                 apiService.fetchSentimentDistribution()
@@ -219,14 +283,14 @@ document.addEventListener('DOMContentLoaded', () => {
             renderStatsCards(stats);
             renderSentimentDistributionChart(distribution);
 
-            // Fetch and render dynamic charts using initial dropdown values
             updateSentimentOverTimeChart('day');
             updateTopCategories(dom.topCategoriesLimitSelect.value);
             updateTopKeywords(dom.topKeywordsLimitSelect.value);
 
         } catch (error) {
-            dom.statsContainer.innerHTML = `<div class="col-12"><div class="alert alert-danger">Không thể tải dữ liệu dashboard. Vui lòng thử lại.</div></div>`;
-            console.error("Dashboard initialization failed:", error);
+             dom.statsContainer.innerHTML = '';
+             showAlert(`Không thể tải dữ liệu dashboard. Vui lòng thử lại. Lỗi: ${error.message}`, 'danger');
+             console.error("Dashboard initialization failed:", error);
         }
     }
 

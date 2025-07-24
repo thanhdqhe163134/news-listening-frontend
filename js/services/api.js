@@ -64,6 +64,16 @@ const apiService = {
         return this._fetch('/articles/', params);
     },
 
+    // Add the new function here
+    crawlArticles() {
+        return this._request('/articles/crawl', { method: 'POST' });
+    },
+
+    // --- APIs cho Categories ---
+    fetchCategories() {
+        return this._fetch('/categories/');
+    },
+
     // --- APIs cho Categories ---
     fetchCategories() {
         return this._fetch('/categories/');
