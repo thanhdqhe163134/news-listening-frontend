@@ -17,16 +17,57 @@
 
             <main class="container-fluid mt-4">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-newspaper me-2"></i>Quản lý Nguồn tin</h5>
-                        <div class="d-flex gap-2 flex-nowrap">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm nguồn tin...">
-                            </div>
-                            <button id="addSourceBtn" class="btn btn-primary">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                             <h5 class="mb-0"><i class="bi bi-newspaper me-2"></i>Quản lý Nguồn tin</h5>
+                             <button id="addSourceBtn" class="btn btn-primary">
                                 <i class="bi bi-plus-circle-fill me-2"></i>Thêm Mới
                             </button>
+                        </div>
+                        <hr>
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="searchInput" class="form-control" placeholder="Tìm theo tên nguồn tin...">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select id="filterBy" class="form-select">
+                                    <option value="" selected>Lọc theo...</option>
+                                    <option value="platform">Nền tảng</option>
+                                    <option value="source_type">Loại nguồn</option>
+                                    <option value="status">Trạng thái</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="filter-value-container">
+                                <select id="platformFilter" class="form-select filter-value-dropdown d-none">
+                                    <option value="" selected>Tất cả nền tảng</option>
+                                    <option value="News">Báo chí</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="PublicProcurement">Mua sắm công</option>
+                                    <option value="Shopee">Shopee</option>
+                                    <option value="Blog">Blog</option>
+                                </select>
+                                <select id="sourceTypeFilter" class="form-select filter-value-dropdown d-none">
+                                     <option value="" selected>Tất cả loại</option>
+                                    <option value="RSS">RSS</option>
+                                    <option value="API">API</option>
+                                    <option value="Sitemap">Sitemap</option>
+                                    <option value="HTML">HTML</option>
+                                    <option value="Other">Khác</option>
+                                </select>
+                                <select id="statusFilter" class="form-select filter-value-dropdown d-none">
+                                     <option value="" selected>Tất cả trạng thái</option>
+                                    <option value="ACTIVE">Đang hoạt động</option>
+                                    <option value="INACTIVE">Không hoạt động</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <button id="resetFiltersBtn" class="btn btn-outline-secondary w-100" title="Xóa bộ lọc">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -35,14 +76,14 @@
                             <table class="table table-hover table-bordered table-sources">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col" class="text-center" style="width: 5%;">ID</th>
-                                        <th scope="col" style="width: 20%;">Tên nguồn tin</th>
-                                        <th scope="col" style="width: 25%;">URL</th>
-                                        <th scope="col" class="text-center" style="width: 10%;">Loại</th>
-                                        <th scope="col" class="text-center" style="width: 10%;">Nền tảng</th>
-                                        <th scope="col" class="text-center" style="width: 10%;">Trạng thái</th>
-                                        <th scope="col" class="text-center" style="width: 10%;">Lần quét cuối</th>
-                                        <th scope="col" class="text-center" style="width: 10%;">Hành động</th>
+                                        <th scope="col" class="text-center sortable-header" data-sort="source_id">ID</th>
+                                        <th scope="col" class="sortable-header" data-sort="source_name">Tên nguồn tin</th>
+                                        <th scope="col" class="text-center">Số bài viết</th>
+                                        <th scope="col" class="text-center">Loại</th>
+                                        <th scope="col" class="text-center">Nền tảng</th>
+                                        <th scope="col" class="text-center">Trạng thái</th>
+                                        <th scope="col" class="text-center sortable-header" data-sort="last_crawled_at">Lần quét cuối</th>
+                                        <th scope="col" class="text-center">Hành động</th>
                                     </tr>
                                 </thead>
                                 <tbody id="sourcesTableBody">
@@ -79,17 +120,20 @@
                             <div class="col-md-6 mb-3">
                                 <label for="sourceType" class="form-label">Loại nguồn</label>
                                 <select id="sourceType" class="form-select" required>
-                                    <option value="RSS">RSS</option>
+                                    <option value="RSS" selected>RSS</option>
                                     <option value="API">API</option>
                                     <option value="Sitemap">Sitemap</option>
+                                    <option value="HTML">HTML</option>
                                     <option value="Other">Khác</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="platform" class="form-label">Nền tảng</label>
                                 <select id="platform" class="form-select" required>
-                                    <option value="News">News</option>
-                                    <option value="Social">Social</option>
+                                    <option value="News" selected>Báo chí</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="PublicProcurement">Mua sắm công</option>
+                                    <option value="Shopee">Shopee</option>
                                     <option value="Blog">Blog</option>
                                 </select>
                             </div>
@@ -97,8 +141,8 @@
                         <div class="mb-3">
                             <label for="status" class="form-label">Trạng thái</label>
                             <select id="status" class="form-select" required>
-                                <option value="ACTIVE">ACTIVE</option>
-                                <option value="INACTIVE">INACTIVE</option>
+                                <option value="ACTIVE" selected>Đang hoạt động</option>
+                                <option value="INACTIVE">Không hoạt động</option>
                             </select>
                         </div>
                         <div class="modal-footer">
