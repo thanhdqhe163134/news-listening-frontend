@@ -11,9 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Thêm tham chiếu đến tiêu đề cột có thể sắp xếp
         idColumnHeader: document.querySelector('.table-categories thead th:nth-child(1)'),
         nameColumnHeader: document.querySelector('.table-categories thead th:nth-child(2)'),
-        keywordsCountColumnHeader: document.querySelector('.table-categories thead th:nth-child(4)'),
-        createdAtColumnHeader: document.querySelector('.table-categories thead th:nth-child(5)'),
-        updatedAtColumnHeader: document.querySelector('.table-categories thead th:nth-child(6)'),
+        // keywordsCountColumnHeader is now nth-child(3) since description column is removed
+        keywordsCountColumnHeader: document.querySelector('.table-categories thead th:nth-child(3)'), 
+        // createdAtColumnHeader is now nth-child(4)
+        createdAtColumnHeader: document.querySelector('.table-categories thead th:nth-child(4)'), 
+        // updatedAtColumnHeader is now nth-child(5)
+        updatedAtColumnHeader: document.querySelector('.table-categories thead th:nth-child(5)'), 
     };
 
     const modalElement = document.getElementById('categoryModal');
@@ -23,10 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
         title: document.getElementById('categoryModalLabel'),
         categoryId: document.getElementById('categoryId'),
         categoryName: document.getElementById('categoryName'),
-        categoryDescription: document.getElementById('categoryDescription'),
+        // REMOVED: categoryDescription
     };
 
     let allCategories = [];
+    let filteredCategories = []; 
     // Mặc định sắp xếp theo category_id tăng dần.
     let state = { page: 1, size: 10, sortColumn: 'category_id', sortDirection: 'asc' }; 
 
@@ -67,8 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTable(categoriesOnPage) {
         if (!categoriesOnPage || categoriesOnPage.length === 0) {
             const searchText = dom.searchInput.value;
+            // Changed colspan from 7 to 6
             const message = searchText ? `Không tìm thấy danh mục nào cho "${searchText}".` : 'Chưa có danh mục nào.';
-            dom.tableBody.innerHTML = `<tr><td colspan="7" class="text-center">${message}</td></tr>`;
+            dom.tableBody.innerHTML = `<tr><td colspan="6" class="text-center">${message}</td></tr>`; 
             return;
         }
 
@@ -76,16 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr>
                 <th scope="row" class="text-center">${cat.category_id}</th>
                 <td class="fw-medium">${cat.name}</td>
-                <td>${cat.description || '<span class="text-muted">Không có mô tả</span>'}</td>
                 <td class="text-center"><span class="badge bg-info-subtle text-info-emphasis">${cat.keywords_count || 0}</span></td>
                 <td class="text-center">${formatDate(cat.created_at)}</td>
                 <td class="text-center">${formatDate(cat.updated_at)}</td>
                 <td class="text-center action-btn-group">
                     <button class="btn btn-sm btn-outline-primary action-btn edit-btn" title="Sửa"
                             data-id="${cat.category_id}" 
-                            data-name="${cat.name}"
-                            data-description="${cat.description || ''}">
-                        <i class="bi bi-pencil-square"></i>
+                            data-name="${cat.name}">
+                            <i class="bi bi-pencil-square"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger action-btn delete-btn" title="Xóa" 
                             data-id="${cat.category_id}"
@@ -102,11 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCurrentPage() {
         const start = (state.page - 1) * state.size;
         const end = start + state.size;
-        const categoriesOnPage = allCategories.slice(start, end);
+        const categoriesOnPage = filteredCategories.slice(start, end); 
         renderTable(categoriesOnPage);
         dom.paginationControls.innerHTML = createPagination({
             page: state.page,
-            pages: Math.ceil(allCategories.length / state.size),
+            pages: Math.ceil(filteredCategories.length / state.size), 
         });
     }
     
@@ -120,28 +123,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === API & DATA LOGIC ===
     async function fetchAndRenderCategories() {
-        dom.tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-5"><div class="spinner-border text-primary"></div></td></tr>`;
+        // Changed colspan from 7 to 6 for the initial loading spinner
+        dom.tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-5"><div class="spinner-border text-primary"></div></td></tr>`;
         try {
-            const searchParam = dom.searchInput.value;
-            const result = await apiService.fetchCategories({ search: searchParam });
-            if (result && result.success && Array.isArray(result.data)) {
-                allCategories = result.data;
-                applySorting();
+            const categoriesResult = await apiService.fetchCategories(); 
+            const keywordsResult = await apiService.fetchKeywords(); 
+
+            if (categoriesResult && categoriesResult.success && Array.isArray(categoriesResult.data)) {
+                let categoriesData = categoriesResult.data;
+                
+                if (keywordsResult && keywordsResult.success && Array.isArray(keywordsResult.data)) {
+                    const keywordCounts = {};
+                    keywordsResult.data.forEach(kw => {
+                        if (kw.category_id) {
+                            keywordCounts[kw.category_id] = (keywordCounts[kw.category_id] || 0) + 1;
+                        }
+                    });
+
+                    categoriesData = categoriesData.map(cat => ({
+                        ...cat,
+                        keywords_count: keywordCounts[cat.category_id] || 0
+                    }));
+                }
+
+                allCategories = categoriesData;
+                applyFilterAndSort(); 
                 state.page = 1;
                 renderCurrentPage();
             } else {
                 allCategories = [];
+                filteredCategories = []; 
                 renderCurrentPage();
             }
         } catch (error) {
             showAlert('Không thể tải dữ liệu danh mục. Vui lòng kiểm tra lại API.', 'danger');
             allCategories = [];
+            filteredCategories = []; 
             renderCurrentPage();
         }
     }
 
-    function applySorting() {
-        allCategories.sort((a, b) => {
+    function applyFilterAndSort() {
+        const searchTerm = dom.searchInput.value.toLowerCase().trim();
+
+        if (searchTerm) {
+            // Filter only by category name, as description is removed
+            filteredCategories = allCategories.filter(category => 
+                category.name.toLowerCase().includes(searchTerm)
+            );
+        } else {
+            filteredCategories = [...allCategories];
+        }
+        
+        filteredCategories.sort((a, b) => {
             let valA, valB;
             switch (state.sortColumn) {
                 case 'name':
@@ -176,10 +210,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = modalForm.categoryId.value;
         const data = {
             name: modalForm.categoryName.value,
-            description: modalForm.categoryDescription.value
+            // REMOVED: description: modalForm.categoryDescription.value
         };
 
         try {
+            // Assuming apiService.updateCategory and apiService.createCategory are defined in api.js
+            // If they are not, you'll need to add them to api.js, following the pattern for keywords:
+            // createCategory(data) { return this._request('/categories/', { method: 'POST', body: JSON.stringify(data) }); },
+            // updateCategory(categoryId, data) { return this._request(`/categories/${categoryId}`, { method: 'PUT', body: JSON.stringify(data) }); },
+            // deleteCategory(categoryId) { return this._request(`/categories/${categoryId}`, { method: 'DELETE' }); }
             const result = id 
                 ? await apiService.updateCategory(id, data) 
                 : await apiService.createCategory(data);
@@ -214,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalForm.title.textContent = 'Cập nhật Danh mục';
                 modalForm.categoryId.value = editBtn.dataset.id;
                 modalForm.categoryName.value = editBtn.dataset.name;
-                modalForm.categoryDescription.value = editBtn.dataset.description;
+                // REMOVED: modalForm.categoryDescription.value = editBtn.dataset.description;
                 categoryModal.show();
             }
 
@@ -227,14 +266,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             showAlert('Xóa danh mục thành công!');
                             fetchAndRenderCategories();
                         } else {
-                             showAlert(result?.message || 'Có lỗi xảy ra khi xóa', 'danger');
+                            showAlert(result?.message || 'Có lỗi xảy ra khi xóa', 'danger');
                         }
+                    }).catch(error => {
+                        showAlert(error.message, 'danger');
                     });
                 }
             }
         });
 
-        dom.searchInput.addEventListener('input', debounce(fetchAndRenderCategories, 300));
+        dom.searchInput.addEventListener('input', debounce(() => {
+            applyFilterAndSort(); 
+            state.page = 1; 
+            renderCurrentPage();
+        }, 300));
         
         dom.paginationControls.addEventListener('click', e => {
             const pageLink = e.target.closest('a.page-link');
@@ -268,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.sortColumn = column;
             state.sortDirection = 'asc';
         }
-        applySorting(); 
+        applyFilterAndSort(); 
         state.page = 1; 
         renderCurrentPage(); 
     }

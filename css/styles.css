@@ -225,8 +225,7 @@ body {
 }
 
 .table-categories th:nth-child(1), .table-categories td:nth-child(1) { width: 5%; }  /* Cột ID */
-.table-categories th:nth-child(2), .table-categories td:nth-child(2) { width: 15%; } /* Cột Tên danh mục */
-.table-categories th:nth-child(3), .table-categories td:nth-child(3) { width: 25%; } /* Cột Mô tả */
+.table-categories th:nth-child(2), .table-categories td:nth-child(2) { width: 45%; } /* Cột Tên danh mục */
 .table-categories th:nth-child(4), .table-categories td:nth-child(4) { width: 10%; } /* Cột Số từ khóa */
 .table-categories th:nth-child(5), .table-categories td:nth-child(5) { width: 10%; } /* Cột Ngày tạo */
 .table-categories th:nth-child(6), .table-categories td:nth-child(6) { width: 10%; } /* Cột Ngày cập nhật */
