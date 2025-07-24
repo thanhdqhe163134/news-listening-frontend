@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === RENDER FUNCTIONS ===
     function renderLayout() {
         dom.header.innerHTML = createHeader('Article Analysis Dashboard');
-        dom.mainSidebar.innerHTML = createSidebar('dashboard');
+        dom.mainSidebar.innerHTML = createSidebar('news'); //
         dom.filterSidebar.innerHTML = createFilterSidebar();
 
         // Gán các DOM elements của bộ lọc sau khi đã render
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.alertContainer.innerHTML = '';
 
         const queryParams = { ...queryState };
-        // --- SỬA TÊN THAM SỐ NGÀY THEO API CỦA BẠN ---
+        // Sử dụng tên tham số đúng theo API: published_from và published_to
         if (filterDom.startDateFilter.value) {
             queryParams.published_from = filterDom.startDateFilter.value; 
         } else {
@@ -71,10 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (result && result.data && result.data.items) {
             let articlesToProcess = [...result.data.items];
-
-            // --- BẮT ĐẦU CÁC LOGIC LỌC VÀ SẮP XẾP TRÊN FRONTEND ---
-            // Các bộ lọc này sẽ được giữ lại trên frontend nếu API của bạn không xử lý chúng hoàn toàn.
-            // Nếu API của bạn đã xử lý, có thể xem xét xóa bớt để giảm tải cho frontend.
 
             // 1. Lọc theo Tiêu đề/Nội dung (Search Input)
             const articleSearchText = filterDom.articleSearchInput.value.toLowerCase();
@@ -119,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 6. Lọc theo Ngày xuất bản (Date Range) - LOẠI BỎ LỌC TRÊN FRONTEND
             // Việc lọc ngày tháng sẽ được thực hiện hoàn toàn bởi API Backend.
-            // Bạn cần đảm bảo API của bạn xử lý đúng các tham số 'published_from' và 'published_to'.
 
 
             // 7. Sắp xếp dữ liệu (giữ lại nếu API không đảm bảo thứ tự sắp xếp)
