@@ -1,0 +1,39 @@
+.stat-card {
+    border-radius: 0.75rem;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stat-card-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+}
+
+.stat-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.stat-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #343a40;
+}
+
+.chart-card {
+    border-radius: 0.75rem;
+    border: none;
+}

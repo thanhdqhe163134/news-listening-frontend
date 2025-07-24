@@ -135,5 +135,25 @@ const apiService = {
         return this._request(`/sources/${sourceId}`, {
             method: 'DELETE',
         });
+    },
+
+    fetchDashboardStats() {
+        return this._fetch('/dashboard/stats');
+    },
+
+    fetchSentimentDistribution() {
+        return this._fetch('/dashboard/sentiment-distribution');
+    },
+
+    fetchSentimentOverTime(period = 'day') {
+        return this._fetch('/dashboard/sentiment-over-time', { period });
+    },
+
+    fetchTopCategories(limit = 5) {
+        return this._fetch('/dashboard/top-categories', { limit });
+    },
+
+    fetchTopKeywords(limit = 10) {
+        return this._fetch('/dashboard/top-keywords', { limit });
     }
 };
