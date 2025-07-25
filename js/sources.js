@@ -150,11 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    async function fetchSourceForEdit(id) {
-        const result = await apiService.fetchSources({limit: 1000}); 
-        if(result && result.data) {
-            return result.data.find(s => s.source_id.toString() === id.toString());
+ async function fetchSourceForEdit(id) {
+        // Gọi thẳng đến API lấy 1 record bằng ID
+        const result = await apiService.fetchSource(id); 
+        // Dữ liệu trả về từ API này nằm trong result.data
+        if(result && result.success && result.data) {
+            return result.data;
         }
+        // Nếu không có kết quả thì trả về null
         return null;
     }
 

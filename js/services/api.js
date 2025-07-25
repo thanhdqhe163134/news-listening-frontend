@@ -146,6 +146,10 @@ const apiService = {
             method: 'DELETE',
         });
     },
+    
+    fetchSource(sourceId) {
+        return this._fetch(`/sources/${sourceId}`);
+    },
 
     fetchDashboardStats() {
         return this._fetch('/dashboard/stats');
