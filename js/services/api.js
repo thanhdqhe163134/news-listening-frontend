@@ -64,14 +64,23 @@ const apiService = {
         return this._fetch('/articles/', params);
     },
 
-    // Add the new function here
     crawlArticles() {
         return this._request('/articles/crawl', { method: 'POST' });
     },
 
-    // --- APIs cho Categories ---
-    fetchCategories() {
-        return this._fetch('/categories/');
+    scrapeTables(url, page) {
+        return this._request('/scrape/tables', {
+            method: 'POST',
+            body: JSON.stringify({ url: url, pages: page }),
+        });
+    },
+    
+    getProcurementLinks(items) {
+        // Calls the new endpoint shown in your screenshots
+        return this._request('/procurement/get-links', {
+            method: 'POST',
+            body: JSON.stringify(items),
+        });
     },
 
     // --- APIs cho Categories ---
@@ -80,67 +89,24 @@ const apiService = {
     },
 
     // --- APIs cho Sources ---
-    fetchSources() {
-        return this._fetch('/sources/');
-    },
-
-    // --- APIs cho Keywords (CRUD) ---
-    fetchKeywords(params) {
-        return this._fetch('/keywords/', params);
-    },
-
-    /**
-     * Tạo một từ khóa mới.
-     * @param {object} data - Dữ liệu từ khóa mới { keyword_text, category_id }.
-     * @returns {Promise<object>}
-     */
-    createKeyword(data) {
-        return this._request('/keywords/', {
-            method: 'POST',
-            body: JSON.stringify(data),
-        });
-    },
-
-    /**
-     * Cập nhật một từ khóa đã có.
-     * @param {number|string} keywordId - ID của từ khóa cần cập nhật.
-     * @param {object} data - Dữ liệu cập nhật { keyword_text, category_id }.
-     * @returns {Promise<object>}
-     */
-    updateKeyword(keywordId, data) {
-        return this._request(`/keywords/${keywordId}`, {
-            method: 'PUT',
-            body: JSON.stringify(data),
-        });
-    },
-
-    /**
-     * Xóa một từ khóa.
-     * @param {number|string} keywordId - ID của từ khóa cần xóa.
-     * @returns {Promise<object>}
-     */
-    deleteKeyword(keywordId) {
-        return this._request(`/keywords/${keywordId}`, {
-            method: 'DELETE',
-        });
-    },
-
-     // --- APIs cho Sources (CRUD) ---
     fetchSources(params) {
         return this._fetch('/sources/', params);
     },
+    
     createSource(data) {
         return this._request('/sources/', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     },
+    
     updateSource(sourceId, data) {
         return this._request(`/sources/${sourceId}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
     },
+
     deleteSource(sourceId) {
         return this._request(`/sources/${sourceId}`, {
             method: 'DELETE',
@@ -151,6 +117,32 @@ const apiService = {
         return this._fetch(`/sources/${sourceId}`);
     },
 
+    // --- APIs cho Keywords (CRUD) ---
+    fetchKeywords(params) {
+        return this._fetch('/keywords/', params);
+    },
+    
+    createKeyword(data) {
+        return this._request('/keywords/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+    
+    updateKeyword(keywordId, data) {
+        return this._request(`/keywords/${keywordId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+
+    deleteKeyword(keywordId) {
+        return this._request(`/keywords/${keywordId}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // --- APIs cho Dashboard ---
     fetchDashboardStats() {
         return this._fetch('/dashboard/stats');
     },
@@ -170,25 +162,26 @@ const apiService = {
     fetchTopKeywords(limit = 10) {
         return this._fetch('/dashboard/top-keywords', { limit });
     },
-
+    
+    // --- APIs cho Categories (CRUD) ---
     fetchCategory(categoryId) {
         return this._fetch(`/categories/${categoryId}`);
     },
-
+    
     createCategory(data) {
         return this._request('/categories/', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     },
-
+    
     updateCategory(categoryId, data) {
         return this._request(`/categories/${categoryId}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
     },
-
+    
     deleteCategory(categoryId) {
         return this._request(`/categories/${categoryId}`, {
             method: 'DELETE',
