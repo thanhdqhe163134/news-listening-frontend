@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLayout() {
         dom.header.innerHTML = createHeader('Dashboard');
         dom.mainSidebar.innerHTML = createSidebar('dashboard');
-                initializeAuthUI(); 
+        initializeAuthUI(); 
 
     }
 

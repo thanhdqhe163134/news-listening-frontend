@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.header.innerHTML = createHeader('Article Analysis Dashboard');
         dom.mainSidebar.innerHTML = createSidebar('news'); //
         dom.filterSidebar.innerHTML = createFilterSidebar();
+        initializeAuthUI();
 
         // Gán các DOM elements của bộ lọc sau khi đã render
         filterDom = {

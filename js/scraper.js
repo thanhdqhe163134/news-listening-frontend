@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLayout() {
         dom.header.innerHTML = createHeader('Mua sắm công');
         dom.mainSidebar.innerHTML = createSidebar('procurement');
-                initializeAuthUI(); 
+        initializeAuthUI(); 
 
     }
 
