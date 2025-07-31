@@ -20,23 +20,17 @@
                     <div class="card-body">
                         <div id="alert-container"></div>
                         
-                        <div class="row g-3 align-items-end mb-3 pb-3 border-bottom">
-                            <div class="col-md-auto">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="procurementType" id="typePlan" value="plan" checked>
-                                    <label class="form-check-label" for="typePlan">Kế hoạch lựa chọn nhà thầu</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="procurementType" id="typeInvitation" value="invitation">
-                                    <label class="form-check-label" for="typeInvitation">Thông báo mời thầu</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3" id="date-picker-container">
-                                <label for="date-picker" class="form-label fw-semibold">Ngày đăng tải:</label>
-                                <input type="date" id="date-picker" class="form-control">
-                            </div>
+                    <div class="row g-3 align-items-center mb-3 pb-3 border-bottom">
+                    <div class="col-auto d-flex align-items-center"> <div class="form-check form-check-inline mb-0"> <input class="form-check-input" type="radio" name="procurementType" id="typePlan" value="plan" checked>
+                        <label class="form-check-label" for="typePlan">Kế hoạch lựa chọn nhà thầu</label>
+                    </div>
+                        <div class="form-check form-check-inline mb-0">
+                            <input class="form-check-input" type="radio" name="procurementType" id="typeInvitation" value="invitation">
+                            <label class="form-check-label" for="typeInvitation">Thông báo mời thầu</label>
                         </div>
-
+                    </div>
+                        <div class="col-auto ms-auto" id="date-picker-container"> <label for="date-picker" class="form-label fw-semibold me-2 mb-0">Ngày đăng tải:</label> <input type="date" id="date-picker" class="form-control d-inline-block w-auto"> </div>
+                    </div>
                         <div id="scrape-results-container">
                              </div>
                     </div>

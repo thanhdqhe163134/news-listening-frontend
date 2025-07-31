@@ -44,9 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // === RENDER FUNCTIONS ===
     function renderLayout() {
         dom.header.innerHTML = createHeader('Mua sắm công');
-        dom.mainSidebar.innerHTML = createSidebar('procurement');
+        dom.mainSidebar.innerHTML = createSidebar('scraper'); // Changed 'procurement' to 'scraper'
         initializeAuthUI(); 
-
     }
 
     function showAlert(message, type = 'danger') {
