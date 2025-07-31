@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLayout() {
         dom.header.innerHTML = createHeader('Quản lý Từ khóa');
         dom.mainSidebar.innerHTML = createSidebar('keywords');
+                initializeAuthUI(); 
+
     }
 
     function renderCategorizedKeywords(categories, keywords) {

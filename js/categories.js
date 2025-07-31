@@ -45,7 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // === RENDER FUNCTIONS ===
     function renderLayout() {
         dom.header.innerHTML = createHeader('Quản lý Danh mục');
-        dom.mainSidebar.innerHTML = createSidebar('categories'); // 'categories' là key để active menu
+        dom.mainSidebar.innerHTML = createSidebar('categories');
+        initializeAuthUI(); 
+
     }
 
     function updateSortIcons() {

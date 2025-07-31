@@ -310,3 +310,32 @@ body {
 .sentiment-neutral {
     background-color: #6c757d; /* Gray */
 }
+
+/* === AUTHENTICATION STYLES === */
+#auth-status-container .dropdown {
+    position: relative;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #dee2e6;
+    transition: border-color 0.2s ease;
+}
+
+.user-avatar:hover {
+    border-color: #0d6efd;
+}
+
+#auth-status-container .dropdown-menu {
+    padding: 0.5rem 0;
+    border: 1px solid rgba(0,0,0,.1);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+}
+
+#auth-status-container .dropdown-item {
+    display: flex;
+    align-items: center;
+}

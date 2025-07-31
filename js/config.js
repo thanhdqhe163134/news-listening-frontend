@@ -1,3 +1,3 @@
 const config = {
-    API_BASE_URL: 'http://localhost:8000/api/v1'
+    API_BASE_URL: 'https://9edf2dda9346.ngrok-free.app/api/v1'
 };

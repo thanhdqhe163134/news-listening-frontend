@@ -69,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLayout() {
         dom.header.innerHTML = createHeader('Quản lý Nguồn tin');
         dom.mainSidebar.innerHTML = createSidebar('sources');
+                initializeAuthUI(); 
+
     }
 
     function updateSortIcons() {
