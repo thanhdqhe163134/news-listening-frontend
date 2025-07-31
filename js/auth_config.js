@@ -1,7 +1,7 @@
 // js/auth_config.js
 
 // TODO: Thay thế bằng Google Client ID thật của bạn
-const GOOGLE_CLIENT_ID = "mnp8nrt9585rd0bae52uc4kcfr8uman8";
+const GOOGLE_CLIENT_ID = "151555212192-mnp8nrt9585rd0bae52uc4kcfr8uman8.apps.googleusercontent.com";
 
 // URL callback phải khớp với những gì đã đăng ký trên Google Cloud Console
 const REDIRECT_URI_PROD = "https://thanhdqhe163134.github.io/news-listening-frontend/auth_callback.html";
