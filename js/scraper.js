@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         procurementTypeRadios: document.querySelectorAll('input[name="procurementType"]'),
         datePicker: document.getElementById('date-picker'),
     };
-    
+
     // === HELPER FUNCTIONS ===
     function formatDateForApi(date) {
         const d = new Date(date);
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === RENDER FUNCTIONS ===
     function renderLayout() {
-        dom.header.innerHTML = createHeader('Public Procurement');
+        dom.header.innerHTML = createHeader('Mua sắm công');
         dom.mainSidebar.innerHTML = createSidebar('procurement');
     }
 
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
     }
 
-    async function renderTableAndFetchLinks(scrapedData) {
+    function renderTable(scrapedData) {
         const table = scrapedData.data[0];
         const idColumnHeader = state.procurementType === 'plan' ? 'Mã KHLCNT' : 'Mã TBMT';
         
@@ -68,15 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rowsData = table.rows.map(row => {
             const firstCell = row[0] || '';
-            const code = firstCell.substring(0, 14);
-            const description = firstCell.substring(14).trim();
+            const code = firstCell.substring(0, 15);
+            const description = firstCell.substring(15).trim();
             const originalCells = row.slice(1);
             return { code, description, originalCells };
         });
 
-        const loadingSpinner = `<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>`;
+        const getLinkButton = `<button class="btn btn-sm btn-outline-primary get-link-btn"><i class="bi bi-box-arrow-up-right"></i> Get Link</button>`;
         const initialRowsHtml = rowsData.map(r => {
-            const cells = [r.code, r.description, ...r.originalCells, loadingSpinner].map(cell => `<td>${cell}</td>`).join('');
+            const cells = [r.code, r.description, ...r.originalCells, getLinkButton].map(cell => `<td>${cell}</td>`).join('');
             return `<tr data-code="${r.code.split('-')[0]}">${cells}</tr>`;
         }).join('');
 
@@ -87,36 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tbody>${initialRowsHtml}</tbody>
                 </table>
             </div>`;
-
-        // Fetch the actual links from the new backend endpoint
-        const kind = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
-        const itemsToFetch = rowsData.map(r => ({ kind, code: r.code.split('-')[0] }));
-        
-        try {
-            const result = await apiService.getProcurementLinks(itemsToFetch);
-            
-            if(result && result.success && typeof result.data === 'object') {
-                const linksMap = result.data; // The data is now a dictionary {code: link}
-                
-                // Update table with fetched links
-                Object.keys(linksMap).forEach(code => {
-                    const finalLink = linksMap[code];
-                    const linkCell = document.querySelector(`tr[data-code="${code}"] td:last-child`);
-                    if (linkCell) {
-                        if (finalLink) {
-                            linkCell.innerHTML = `<a href="${finalLink}" target="_blank" title="View on Mua Sắm Công"><i class="bi bi-box-arrow-up-right"></i></a>`;
-                        } else {
-                            linkCell.innerHTML = 'N/A';
-                        }
-                    }
-                });
-            } else {
-                 throw new Error("Invalid data format received from link API.");
-            }
-        } catch (error) {
-            showAlert('Could not retrieve procurement links from the server.', 'warning');
-            document.querySelectorAll('tr[data-code] td:last-child').forEach(cell => cell.innerHTML = 'Error');
-        }
     }
 
     function renderPagination() {
@@ -149,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const result = await apiService.scrapeTables(apiUrl, state.currentPage);
             if (result && result.success && result.data.data && result.data.data.length > 0) {
-                await renderTableAndFetchLinks(result.data);
+                renderTable(result.data);
             } else {
                 dom.resultsContainer.innerHTML = `<div class="alert alert-warning text-center">No data found for the selected criteria on page ${state.currentPage}.</div>`;
             }
@@ -182,6 +152,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageNumber = parseInt(pageLink.dataset.page, 10);
             if (pageNumber !== state.currentPage) {
                 executeScrape(pageNumber);
+            }
+        });
+
+        dom.resultsContainer.addEventListener('click', async (e) => {
+            const getLinkBtn = e.target.closest('.get-link-btn');
+            if (!getLinkBtn) return;
+        
+            e.preventDefault();
+        
+            const row = getLinkBtn.closest('tr');
+            const code = row.dataset.code;
+            const linkCell = getLinkBtn.parentElement;
+        
+            getLinkBtn.disabled = true;
+            getLinkBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Opening...`;
+        
+            const kind = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
+            const itemsToFetch = [{ kind, code }];
+        
+            try {
+                const result = await apiService.getProcurementLinks(itemsToFetch);
+        
+                // **FIX**: Handle the new API response where `data` is an array.
+                const finalLink = result?.data?.[0]?.link;
+        
+                if (finalLink) {
+                    window.open(finalLink, '_blank');
+                    linkCell.innerHTML = `<a href="${finalLink}" target="_blank" title="Link opened in new tab">${code}</a>`;
+                } else {
+                    // This will be triggered if the API call succeeds but the link is missing.
+                    throw new Error(result?.message || `Link not found for ${code}.`);
+                }
+            } catch (error) {
+                // Show a proper error alert.
+                showAlert(error.message || 'Could not retrieve the procurement link.', 'danger');
+                getLinkBtn.disabled = false;
+                getLinkBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i> Get Link`;
             }
         });
     }
