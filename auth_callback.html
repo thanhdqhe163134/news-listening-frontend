@@ -69,7 +69,7 @@
                     }), 7);
 
                     // Chuyển hướng về trang chủ sau khi đăng nhập thành công
-                    window.location.href = '/news-listening-frontend/index.html';
+                    window.location.href = '/index.html';
 
                 } catch (error) {
                     console.error('Lỗi khi gọi API backend:', error);
@@ -78,7 +78,7 @@
             } else {
                 document.body.innerHTML = '<p style="color: red;">Không tìm thấy mã xác thực. Đang chuyển hướng...</p>';
                 setTimeout(() => {
-                    window.location.href = '/news-listening-frontend/index.html';
+                    window.location.href = '/index.html';
                 }, 3000);
             }
         };
