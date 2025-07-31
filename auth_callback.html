@@ -9,7 +9,6 @@
         .spinner { border: 4px solid rgba(0,0,0,.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #0d6efd; animation: spin 1s ease infinite; margin: 0 auto 1rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <!-- Nhúng file config để lấy URL của API Backend -->
     <script src="./js/config.js"></script>
 </head>
 <body>
@@ -20,6 +19,24 @@
 
     <script>
         const API_URL = config.API_BASE_URL;
+
+        /**
+         * Thiết lập một cookie.
+         * @param {string} name - Tên của cookie.
+         * @param {string} value - Giá trị của cookie.
+         * @param {number} days - Số ngày cookie tồn tại.
+         */
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            // Mã hóa giá trị để đảm bảo an toàn khi lưu trữ đối tượng JSON
+            const encodedValue = encodeURIComponent(value);
+            document.cookie = name + "=" + (encodedValue || "")  + expires + "; path=/";
+        }
 
         window.onload = async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -36,21 +53,22 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        // Nếu có lỗi từ server, hiển thị thông báo và dừng lại
                         throw new Error(data.detail || 'Đăng nhập thất bại.');
                     }
                     
-                    // Lưu thông tin user và token vào localStorage
-                    localStorage.setItem('accessToken', data.access_token);
-                    localStorage.setItem('refreshToken', data.refresh_token);
-                    localStorage.setItem('user', JSON.stringify({
+                    // Lưu thông tin user và token vào cookie
+                    // Token thường có thời gian hết hạn ngắn, ví dụ 1 ngày
+                    setCookie('accessToken', data.access_token, 1); 
+                    // Refresh token có thể lưu lâu hơn, ví dụ 7 ngày
+                    setCookie('refreshToken', data.refresh_token, 7); 
+                    // Lưu thông tin người dùng dưới dạng chuỗi JSON
+                    setCookie('user', JSON.stringify({
                         email: data.email,
                         username: data.username,
                         avatar_url: data.avatar_url,
-                    }));
+                    }), 7);
 
                     // Chuyển hướng về trang chủ sau khi đăng nhập thành công
-                    // Sử dụng đường dẫn tuyệt đối cho GitHub Pages
                     window.location.href = '/news-listening-frontend/index.html';
 
                 } catch (error) {

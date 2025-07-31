@@ -1,6 +1,51 @@
 // js/auth.js
 
 /**
+ * Thiết lập một cookie.
+ * @param {string} name - Tên của cookie.
+ * @param {string} value - Giá trị của cookie.
+ * @param {number} days - Số ngày cookie tồn tại.
+ */
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+
+/**
+ * Lấy giá trị của một cookie.
+ * @param {string} name - Tên của cookie.
+ * @returns {string|null} Giá trị của cookie hoặc null nếu không tìm thấy.
+ */
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+            const value = c.substring(nameEQ.length, c.length);
+            // Giải mã giá trị để lấy lại chuỗi JSON ban đầu
+            return decodeURIComponent(value);
+        }
+    }
+    return null;
+}
+
+/**
+ * Xóa một cookie.
+ * @param {string} name - Tên của cookie.
+ */
+function deleteCookie(name) {   
+    document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+
+/**
  * Chuyển hướng người dùng đến trang đăng nhập của Google.
  */
 function googleLogin() {
@@ -10,29 +55,34 @@ function googleLogin() {
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('scope', 'openid email profile');
-    authUrl.searchParams.append('access_type', 'offline'); // Yêu cầu refresh token
-    authUrl.searchParams.append('prompt', 'consent'); // Luôn hiển thị màn hình đồng ý
+    authUrl.searchParams.append('access_type', 'offline');
+    authUrl.searchParams.append('prompt', 'consent');
 
     window.location.href = authUrl.toString();
 }
 
 /**
- * Xóa thông tin đăng nhập và tải lại trang.
+ * Xóa thông tin đăng nhập (cookies) và tải lại trang.
  */
 function logout() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    deleteCookie('accessToken');
+    deleteCookie('refreshToken');
+    deleteCookie('user');
     window.location.reload();
 }
 
 /**
- * Lấy thông tin người dùng từ localStorage.
+ * Lấy thông tin người dùng từ cookie.
  * @returns {object|null} Thông tin người dùng hoặc null nếu chưa đăng nhập.
  */
 function getCurrentUser() {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    const userCookie = getCookie('user');
+    try {
+        return userCookie ? JSON.parse(userCookie) : null;
+    } catch (e) {
+        console.error("Lỗi khi phân tích cookie của người dùng:", e);
+        return null;
+    }
 }
 
 /**
@@ -50,12 +100,13 @@ function initializeAuthUI() {
             <div class="dropdown">
                 <img src="${user.avatar_url}" alt="${user.username}" id="user-avatar" class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Tài khoản">
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="user-avatar">
-                    <li><a class="dropdown-item" href="#">Chào, ${user.username}</a></li>
+                    <li><span class="dropdown-item-text">Chào, <strong>${user.username}</strong></span></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" id="logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>
                 </ul>
             </div>
         `;
+        // Gán sự kiện click cho nút đăng xuất vừa được tạo
         document.getElementById('logout-btn').addEventListener('click', logout);
     } else {
         // Chưa đăng nhập: Hiển thị nút đăng nhập
@@ -65,6 +116,7 @@ function initializeAuthUI() {
                 <span>Đăng nhập với Google</span>
             </button>
         `;
+        // Gán sự kiện click cho nút đăng nhập vừa được tạo
         document.getElementById('login-btn').addEventListener('click', googleLogin);
     }
 }
