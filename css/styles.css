@@ -339,3 +339,8 @@ body {
     display: flex;
     align-items: center;
 }
+
+.main-content > header {
+    position: relative; 
+    z-index: 1030;     
+}
