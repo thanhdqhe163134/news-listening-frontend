@@ -99,6 +99,12 @@ body {
 .article-card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     border: 0;
+    position: relative; /* Đảm bảo đã có */
+    overflow: hidden;   /* Đảm bảo đã có, để cắt bỏ các phần tử con thò ra ngoài */
+    /* Điều chỉnh padding để nội dung không bị che bởi indicator và save icon */
+    padding-top: 30px; 
+    padding-bottom: 40px; /* Thêm padding-bottom để chừa chỗ cho save icon */
+    padding-left: 15px; 
 }
 
 .article-card:hover {
@@ -138,6 +144,21 @@ body {
 /* Thêm khoảng đệm bên phải cho tiêu đề để không bị chỉ báo che mất */
 .article-card .card-title {
     padding-right: 25px; 
+}
+
+/* === Save Icon Styles === */
+.save-icon-container {
+    position: absolute;
+    bottom: 10px; /* Vị trí từ dưới lên */
+    right: 15px; /* Vị trí từ phải sang */
+    z-index: 10; /* Đảm bảo nó nằm trên các nội dung khác */
+    cursor: pointer;
+    font-size: 1.5rem; /* Kích thước icon */
+    color: #6c757d; /* Màu mặc định cho icon */
+}
+
+.save-icon-container .save-icon:hover {
+    color: #007bff; /* Thay đổi màu khi hover */
 }
 
 /* === Keyword Filter Tag === */
@@ -263,15 +284,6 @@ body {
     color: #0d6efd;
 }
 
-/* Đảm bảo .article-card có position: relative; */
-.article-card {
-    position: relative; /* Đảm bảo đã có */
-    overflow: hidden;   /* Đảm bảo đã có, để cắt bỏ các phần tử con thò ra ngoài */
-    /* Điều chỉnh padding để nội dung không bị che bởi indicator */
-    padding-top: 30px;  /* Tăng padding-top để chừa chỗ cho indicator */
-    padding-left: 15px; /* Giữ padding-left hoặc điều chỉnh nếu cần */
-}
-
 /* Kiểu cho indicator "Tin mới" có chữ bên trong */
 .new-news-indicator {
     position: absolute;
@@ -299,7 +311,9 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    /* ... các style khác của sentiment indicator ... */
+    border: 2px solid white; /* Đảm bảo border trắng để nổi bật */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    z-index: 11; /* Đặt z-index cao hơn new-news-indicator nếu cần để nó luôn trên cùng */
 }
 .sentiment-positive {
     background-color: #28a745; /* Green */

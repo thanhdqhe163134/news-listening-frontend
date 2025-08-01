@@ -40,7 +40,7 @@ function getCookie(name) {
  * Xóa một cookie.
  * @param {string} name - Tên của cookie.
  */
-function deleteCookie(name) {   
+function deleteCookie(name) {  
     document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
 
@@ -101,13 +101,27 @@ function initializeAuthUI() {
                 <img src="${user.avatar_url}" alt="${user.username}" id="user-avatar" class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Tài khoản">
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="user-avatar">
                     <li><span class="dropdown-item-text">Chào, <strong>${user.username}</strong></span></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li><hr class="dropdown-divider"></li> 
+                    <li>
+                        <a class="dropdown-item" href="#" id="saved-articles-link">
+                            <i class="far fa-bookmark me-2"></i>Bài viết đã lưu
+                        </a>
+                    </li>
                     <li><button class="dropdown-item" id="logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>
                 </ul>
             </div>
         `;
         // Gán sự kiện click cho nút đăng xuất vừa được tạo
         document.getElementById('logout-btn').addEventListener('click', logout);
+        
+        // Gán sự kiện click cho "Bài viết đã lưu"
+        document.getElementById('saved-articles-link').addEventListener('click', (event) => {
+            event.preventDefault(); // Ngăn chặn hành vi mặc định của thẻ <a>
+            // TODO: Thêm logic để chuyển hướng hoặc hiển thị bài viết đã lưu
+            alert('Chức năng "Bài viết đã lưu" sẽ được triển khai tại đây!');
+            // Ví dụ: window.location.href = '/saved-articles';
+        });
+
     } else {
         // Chưa đăng nhập: Hiển thị nút đăng nhập
         authContainer.innerHTML = `

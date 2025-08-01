@@ -55,6 +55,14 @@ function createArticleCard(article) {
         newNewsIndicatorHtml = '<div class="new-news-indicator"><span>Tin mới</span></div>'; // Thêm chữ "Tin mới" vào đây
     }
 
+    // Add the save icon HTML
+    // Giữ nguyên HTML của save icon, nhưng sẽ bỏ position:absolute trong CSS
+    const saveIconHtml = `
+        <div class="save-icon-container">
+            <i class="far fa-bookmark save-icon" title="Lưu bài viết"></i>
+        </div>
+    `;
+
     return `
         <div class="card article-card shadow-sm position-relative">
             ${newNewsIndicatorHtml} ${sentimentIndicatorHtml}
@@ -68,6 +76,7 @@ function createArticleCard(article) {
                 <p class="card-text small">${(article.content || '').substring(0, 200)}...</p>
                 <div class="d-flex justify-content-between align-items-end mt-3">
                     <div class="tags-container">${categoryHtml}${keywordsHtml}</div>
+                    ${saveIconHtml} 
                 </div>
                 <a href="${article.url}" target="_blank" class="stretched-link" title="Đọc bài viết gốc"></a>
             </div>
