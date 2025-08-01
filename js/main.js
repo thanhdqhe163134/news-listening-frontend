@@ -9,23 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
         alertContainer: document.getElementById('alert-container'),
     };
 
-    // DOM elements cho bộ lọc, sẽ được gán sau khi render layout
     let filterDom = {};
-
-    // UI State: Lưu trữ cả ID và TEXT của các từ khóa đã chọn để dễ dàng render lại
     let selectedKeywords = [];
-
-    // Thư viện Tom Select sẽ được sử dụng để quản lý các dropdowns
     let tomSelectInstances = {};
 
-    // === RENDER FUNCTIONS ===
     function renderLayout() {
         dom.header.innerHTML = createHeader('Article Analysis Dashboard');
-        dom.mainSidebar.innerHTML = createSidebar('news'); //
+        dom.mainSidebar.innerHTML = createSidebar('news');
         dom.filterSidebar.innerHTML = createFilterSidebar();
+        // --- FIX IS HERE: Call initializeAuthUI which is now async ---
         initializeAuthUI();
 
-        // Gán các DOM elements của bộ lọc sau khi đã render
         filterDom = {
             articleSearchInput: document.getElementById('article-search-input'),
             sourceFilter: document.getElementById('source-filter'),
@@ -44,45 +38,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function initializeTomSelects() {
-        tomSelectInstances.source = new TomSelect(filterDom.sourceFilter, {
-            placeholder: 'Chọn một nguồn...'
-        });
+        tomSelectInstances.source = new TomSelect(filterDom.sourceFilter, { placeholder: 'Chọn một nguồn...' });
         tomSelectInstances.sentiment = new TomSelect(filterDom.sentimentFilter, {});
         tomSelectInstances.sortBy = new TomSelect(filterDom.sortBy, {});
     }
 
+    // --- REFACTORED AND FIXED FUNCTION ---
     async function handleSaveToggle(saveContainer) {
         const articleId = parseInt(saveContainer.dataset.articleId, 10);
         if (!articleId) return;
 
-        const isSaved = saveContainer.classList.contains('saved');
+        // Disable button to prevent multiple clicks
+        saveContainer.style.pointerEvents = 'none';
         const icon = saveContainer.querySelector('.save-icon');
+        const isSaved = saveContainer.classList.contains('saved');
 
         try {
             if (isSaved) {
-                // --- Unsave the article ---
+                // --- Unsave Action ---
                 await apiService.unsaveArticle(articleId);
-                savedArticleIds.delete(articleId); // Update local state
-                icon.classList.remove('fas');
-                icon.classList.add('far');
+                savedArticleIds.delete(articleId); // Update state
+                // Update UI immediately
                 saveContainer.classList.remove('saved');
+                icon.classList.remove('bi-bookmark-fill');
+                icon.classList.add('bi-bookmark');
                 saveContainer.title = 'Lưu bài viết';
             } else {
-                // --- Save the article ---
+                // --- Save Action ---
                 await apiService.saveArticle(articleId);
-                savedArticleIds.add(articleId); // Update local state
-                icon.classList.remove('far');
-                icon.classList.add('fas');
+                savedArticleIds.add(articleId); // Update state
+                // Update UI immediately
                 saveContainer.classList.add('saved');
+                icon.classList.remove('bi-bookmark');
+                icon.classList.add('bi-bookmark-fill');
                 saveContainer.title = 'Bỏ lưu bài viết';
             }
         } catch (error) {
-            // Check for 401 Unauthorized
             if (error.message.includes('401') || error.message.toLowerCase().includes('validate credentials')) {
                  showAlert('Vui lòng đăng nhập để lưu bài viết.', 'warning');
             } else {
                  showAlert(`Lỗi: ${error.message}`, 'danger');
             }
+        } finally {
+            // Re-enable button after action
+            saveContainer.style.pointerEvents = 'auto';
         }
     }
 
@@ -384,18 +383,18 @@ document.addEventListener('DOMContentLoaded', () => {
         await initializeTomSelects(); // Using await just in case
         addEventListeners();
 
-        // === FETCH SAVED ARTICLES ON LOAD ===
-        if (getCurrentUser()) { // Only fetch if user is logged in
-            try {
-                const result = await apiService.getSavedArticleIds();
-                if (result.success && Array.isArray(result.data)) {
-                    savedArticleIds = new Set(result.data);
-                }
-            } catch (error) {
-                console.error("Could not fetch saved articles:", error);
-                // Don't show an alert here, just fail silently
-            }
-        }
+        // // === FETCH SAVED ARTICLES ON LOAD ===
+        // if (getCurrentUser()) { // Only fetch if user is logged in
+        //     try {
+        //         const result = await apiService.getSavedArticleIds();
+        //         if (result.success && Array.isArray(result.data)) {
+        //             savedArticleIds = new Set(result.data);
+        //         }
+        //     } catch (error) {
+        //         console.error("Could not fetch saved articles:", error);
+        //         // Don't show an alert here, just fail silently
+        //     }
+        // }
         // ===================================
         
         // Now fetch articles, which will use the `savedArticleIds` set

@@ -58,10 +58,8 @@ function createArticleCard(article) {
     const isSaved = savedArticleIds.has(article.article_id);
 
     // Use a solid icon (fas) if saved, otherwise a regular one (far)
-    const saveIconClass = isSaved ? 'fas fa-bookmark' : 'far fa-bookmark';
+    const saveIconClass = isSaved ? 'bi bi-bookmark-fill' : 'bi bi-bookmark';
     const saveIconTitle = isSaved ? 'Bỏ lưu bài viết' : 'Lưu bài viết';
-
-    // Add a 'saved' class for easier styling and state checking
     const saveContainerClass = isSaved ? 'saved' : '';
 
     const saveIconHtml = `
