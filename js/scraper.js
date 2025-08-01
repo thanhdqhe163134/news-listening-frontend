@@ -66,8 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const rowsData = table.rows.map(row => {
             const firstCell = row[0] || '';
             // --- FIX IS HERE: Use a regular expression for robust code extraction ---
-            const codeMatch = firstCell.match(/^([A-Z0-9-]+)/);
-            const code = codeMatch ? codeMatch[0] : '';
+            // const codeMatch = firstCell.match(/^([A-Z0-9-]+)/);
+            const code = firstCell.slice(0, 15);
+            const rest = firstCell.length > 15 ? firstCell.slice(15).trim() : '';
             const description = firstCell.substring(code.length).trim();
             // --- END FIX ---
             const procuringEntity = row[1] || '';
@@ -195,8 +196,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (getLinkBtn) {
                 e.preventDefault();
                 const row = getLinkBtn.closest('tr');
-                const code = row.cells[0].textContent;
+                const code1 = row.cells[0].textContent;
+                const code = String(code1.slice(0,12));
                 const linkCell = getLinkBtn.parentElement;
+                console.log(code)
                 
                 getLinkBtn.disabled = true;
                 getLinkBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
