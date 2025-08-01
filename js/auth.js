@@ -1,4 +1,4 @@
-// js/auth.js
+// thanh_dqhe163134/news-listening-frontend/news-listening-frontend-6a36e4792c40966d5c550316c8a185d34b0a391c/js/auth.js
 
 /**
  * Thiết lập một cookie.
@@ -86,6 +86,85 @@ function getCurrentUser() {
 }
 
 /**
+ * Renders the HTML for a single saved procurement item.
+ * @param {object} procurement The procurement data object.
+ * @returns {string} The HTML string for the card.
+ */
+function renderSavedProcurement(procurement) {
+    const postedDate = procurement.posted_at ? new Date(procurement.posted_at).toLocaleDateString('vi-VN') : 'N/A';
+    const linkHtml = procurement.original_link 
+        ? `<a href="${procurement.original_link}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">Xem chi tiết</a>` 
+        : '';
+    const itemTypeDisplay = procurement.item_type === 'tbmt' ? 'Thông báo mời thầu' : 'Kế hoạch LCNT';
+
+    return `
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="card-title mb-1">${procurement.project_name}</h6>
+                <p class="card-subtitle mb-2 text-muted small">
+                    <strong>Mã:</strong> ${procurement.item_code} | 
+                    <strong>Loại:</strong> ${itemTypeDisplay}
+                </p>
+                <p class="card-text small mb-1">
+                    <strong>Bên mời thầu:</strong> ${procurement.procuring_entity || 'N/A'}
+                </p>
+                <p class="card-text small">
+                    <strong>Ngày đăng:</strong> ${postedDate}
+                </p>
+                ${linkHtml}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Creates and injects the modal for saved items into the page.
+ */
+function injectSavedItemsModal() {
+    if (document.getElementById('savedItemsModal')) return; // Don't inject if it already exists
+
+    const modalHtml = `
+    <div class="modal fade" id="savedItemsModal" tabindex="-1" aria-labelledby="savedItemsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="savedItemsModalLabel"><i class="fas fa-bookmark me-2"></i>Mục đã lưu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="savedItemsTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="saved-articles-tab" data-bs-toggle="tab" data-bs-target="#saved-articles-pane" type="button" role="tab" aria-controls="saved-articles-pane" aria-selected="true">
+                                <i class="bi bi-newspaper me-2"></i>Tin Tức
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="saved-procurements-tab" data-bs-toggle="tab" data-bs-target="#saved-procurements-pane" type="button" role="tab" aria-controls="saved-procurements-pane" aria-selected="false">
+                                <i class="bi bi-briefcase-fill me-2"></i>Mua sắm công
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3" id="savedItemsTabContent">
+                        <div class="tab-pane fade show active" id="saved-articles-pane" role="tabpanel" aria-labelledby="saved-articles-tab" tabindex="0">
+                            <div id="saved-articles-list" class="vstack gap-3"></div>
+                        </div>
+                        <div class="tab-pane fade" id="saved-procurements-pane" role="tabpanel" aria-labelledby="saved-procurements-tab" tabindex="0">
+                            <div id="saved-procurements-list" class="vstack gap-3"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+
+/**
  * Cập nhật giao diện header dựa trên trạng thái đăng nhập.
  */
 function initializeAuthUI() {
@@ -103,8 +182,8 @@ function initializeAuthUI() {
                     <li><span class="dropdown-item-text">Chào, <strong>${user.username}</strong></span></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="#" id="saved-articles-link">
-                            <i class="far fa-bookmark me-2"></i>Bài viết đã lưu
+                        <a class="dropdown-item" href="#" id="saved-items-link">
+                            <i class="far fa-bookmark me-2"></i>Mục đã lưu
                         </a>
                     </li>
                     <li><button class="dropdown-item" id="logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>
@@ -114,32 +193,55 @@ function initializeAuthUI() {
         // Gán sự kiện click cho nút đăng xuất vừa được tạo
         document.getElementById('logout-btn').addEventListener('click', logout);
 
-        const savedArticlesLink = document.getElementById('saved-articles-link');
-        const savedArticlesModalElement = document.getElementById('savedArticlesModal');
+        // Inject the modal HTML into the page to make it globally available
+        injectSavedItemsModal();
 
-        if (savedArticlesLink && savedArticlesModalElement) {
-            const savedArticlesModal = new bootstrap.Modal(savedArticlesModalElement);
+        const savedItemsLink = document.getElementById('saved-items-link');
+        const savedItemsModalElement = document.getElementById('savedItemsModal');
 
-            savedArticlesLink.addEventListener('click', async (event) => {
+        if (savedItemsLink && savedItemsModalElement) {
+            const savedItemsModal = new bootstrap.Modal(savedItemsModalElement);
+
+            savedItemsLink.addEventListener('click', async (event) => {
                 event.preventDefault();
-                const modalBody = document.getElementById('saved-articles-list');
-                modalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
-                savedArticlesModal.show();
+                
+                const articlesList = document.getElementById('saved-articles-list');
+                const procurementsList = document.getElementById('saved-procurements-list');
+                const loadingHtml = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
+
+                articlesList.innerHTML = loadingHtml;
+                procurementsList.innerHTML = loadingHtml;
+                
+                savedItemsModal.show();
 
                 try {
-                    const result = await apiService.fetchSavedArticles();
-                    if (result.success && Array.isArray(result.data)) {
-                        if (result.data.length > 0) {
-                            // Reuse createArticleCard function from components/articleCard.js
-                            modalBody.innerHTML = result.data.map(createArticleCard).join('');
-                        } else {
-                            modalBody.innerHTML = '<div class="alert alert-info text-center">Bạn chưa lưu bài viết nào.</div>';
-                        }
+                    // Fetch both saved articles and procurements at the same time
+                    const [articlesResult, procurementsResult] = await Promise.all([
+                        apiService.fetchSavedArticles(),
+                        apiService.fetchUserProcurements()
+                    ]);
+
+                    // Render saved articles
+                    if (articlesResult.success && Array.isArray(articlesResult.data)) {
+                        articlesList.innerHTML = articlesResult.data.length > 0
+                            ? articlesResult.data.map(createArticleCard).join('')
+                            : '<div class="alert alert-info text-center">Bạn chưa lưu bài viết nào.</div>';
                     } else {
-                         throw new Error(result.message || "Không thể tải bài viết đã lưu.");
+                         throw new Error(articlesResult.message || "Không thể tải bài viết đã lưu.");
                     }
+                    
+                    // Render saved procurements
+                    if (procurementsResult.success && Array.isArray(procurementsResult.data)) {
+                        procurementsList.innerHTML = procurementsResult.data.length > 0
+                            ? procurementsResult.data.map(renderSavedProcurement).join('')
+                            : '<div class="alert alert-info text-center">Bạn chưa lưu mục mua sắm công nào.</div>';
+                    } else {
+                         throw new Error(procurementsResult.message || "Không thể tải mục mua sắm công đã lưu.");
+                    }
+
                 } catch (error) {
-                    modalBody.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+                    articlesList.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+                    procurementsList.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
                 }
             });
         }

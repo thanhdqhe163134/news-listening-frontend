@@ -2,8 +2,7 @@ const API_BASE_URL = config.API_BASE_URL;
 
 const apiService = {
     async _request(endpoint, options = {}) {
-        // --- ADD AUTHORIZATION HEADER ---
-        const token = getCookie('accessToken'); // Assuming getCookie is globally available from auth.js
+        const token = getCookie('accessToken');
         const headers = {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true',
@@ -12,11 +11,10 @@ const apiService = {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-        // --- END OF CHANGE ---
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers, // Use the new headers object
+                headers,
                 ...options,
             });
 
@@ -207,6 +205,23 @@ const apiService = {
     unsaveArticle(articleId) {
         return this._request(`/users/me/saved-articles/${articleId}`, {
             method: 'DELETE',
+        });
+    },
+
+    fetchUserProcurements() {
+        return this._request('/user-procurements/', { method: 'GET' });
+    },
+
+    saveUserProcurement(procurementData) {
+        return this._request('/user-procurements/', {
+            method: 'POST',
+            body: JSON.stringify(procurementData)
+        });
+    },
+
+    deleteUserProcurement(userProcurementId) {
+        return this._request(`/user-procurements/${userProcurementId}`, {
+            method: 'DELETE'
         });
     }
 };
