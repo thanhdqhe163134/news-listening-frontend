@@ -183,7 +183,7 @@ function initializeAuthUI() {
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <a class="dropdown-item" href="#" id="saved-items-link">
-                            <i class="far fa-bookmark me-2"></i>Mục đã lưu
+                            <i class="bi bi-bookmark me-2"></i>Mục đã lưu
                         </a>
                     </li>
                     <li><button class="dropdown-item" id="logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>
