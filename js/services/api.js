@@ -193,6 +193,10 @@ const apiService = {
         return this._request('/users/me/saved-articles/');
     },
 
+    fetchSavedArticles() {
+        return this._request('/users/me/saved-articles/details');
+    },
+
     saveArticle(articleId) {
         return this._request('/users/me/saved-articles/', {
             method: 'POST',

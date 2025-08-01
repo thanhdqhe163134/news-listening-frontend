@@ -101,7 +101,7 @@ function initializeAuthUI() {
                 <img src="${user.avatar_url}" alt="${user.username}" id="user-avatar" class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Tài khoản">
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="user-avatar">
                     <li><span class="dropdown-item-text">Chào, <strong>${user.username}</strong></span></li>
-                    <li><hr class="dropdown-divider"></li> 
+                    <li><hr class="dropdown-divider"></li>
                     <li>
                         <a class="dropdown-item" href="#" id="saved-articles-link">
                             <i class="far fa-bookmark me-2"></i>Bài viết đã lưu
@@ -113,14 +113,36 @@ function initializeAuthUI() {
         `;
         // Gán sự kiện click cho nút đăng xuất vừa được tạo
         document.getElementById('logout-btn').addEventListener('click', logout);
-        
-        // Gán sự kiện click cho "Bài viết đã lưu"
-        document.getElementById('saved-articles-link').addEventListener('click', (event) => {
-            event.preventDefault(); // Ngăn chặn hành vi mặc định của thẻ <a>
-            // TODO: Thêm logic để chuyển hướng hoặc hiển thị bài viết đã lưu
-            alert('Chức năng "Bài viết đã lưu" sẽ được triển khai tại đây!');
-            // Ví dụ: window.location.href = '/saved-articles';
-        });
+
+        const savedArticlesLink = document.getElementById('saved-articles-link');
+        const savedArticlesModalElement = document.getElementById('savedArticlesModal');
+
+        if (savedArticlesLink && savedArticlesModalElement) {
+            const savedArticlesModal = new bootstrap.Modal(savedArticlesModalElement);
+
+            savedArticlesLink.addEventListener('click', async (event) => {
+                event.preventDefault();
+                const modalBody = document.getElementById('saved-articles-list');
+                modalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
+                savedArticlesModal.show();
+
+                try {
+                    const result = await apiService.fetchSavedArticles();
+                    if (result.success && Array.isArray(result.data)) {
+                        if (result.data.length > 0) {
+                            // Reuse createArticleCard function from components/articleCard.js
+                            modalBody.innerHTML = result.data.map(createArticleCard).join('');
+                        } else {
+                            modalBody.innerHTML = '<div class="alert alert-info text-center">Bạn chưa lưu bài viết nào.</div>';
+                        }
+                    } else {
+                         throw new Error(result.message || "Không thể tải bài viết đã lưu.");
+                    }
+                } catch (error) {
+                    modalBody.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+                }
+            });
+        }
 
     } else {
         // Chưa đăng nhập: Hiển thị nút đăng nhập
