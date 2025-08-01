@@ -10,6 +10,7 @@ let queryState = {
     size: 10
 };
 
+let savedArticleIds = new Set();
 // Cập nhật trạng thái cho bộ lọc, luôn reset về trang 1
 function updateQueryState(updates, callback) {
     queryState = { ...queryState, ...updates, page: 1 };

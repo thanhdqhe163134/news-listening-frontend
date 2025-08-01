@@ -55,16 +55,23 @@ function createArticleCard(article) {
         newNewsIndicatorHtml = '<div class="new-news-indicator"><span>Tin mới</span></div>'; // Thêm chữ "Tin mới" vào đây
     }
 
-    // Add the save icon HTML
-    // Giữ nguyên HTML của save icon, nhưng sẽ bỏ position:absolute trong CSS
+    const isSaved = savedArticleIds.has(article.article_id);
+
+    // Use a solid icon (fas) if saved, otherwise a regular one (far)
+    const saveIconClass = isSaved ? 'fas fa-bookmark' : 'far fa-bookmark';
+    const saveIconTitle = isSaved ? 'Bỏ lưu bài viết' : 'Lưu bài viết';
+
+    // Add a 'saved' class for easier styling and state checking
+    const saveContainerClass = isSaved ? 'saved' : '';
+
     const saveIconHtml = `
-        <div class="save-icon-container">
-            <i class="far fa-bookmark save-icon" title="Lưu bài viết"></i>
+        <div class="save-icon-container ${saveContainerClass}" data-article-id="${article.article_id}" title="${saveIconTitle}">
+            <i class="${saveIconClass} save-icon"></i>
         </div>
     `;
 
     return `
-        <div class="card article-card shadow-sm position-relative">
+        <div class="card article-card shadow-sm position-relative" data-article-id-wrapper="${article.article_id}">
             ${newNewsIndicatorHtml} ${sentimentIndicatorHtml}
             <div class="card-body">
                 <h5 class="card-title">${article.title}</h5>

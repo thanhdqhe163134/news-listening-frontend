@@ -51,6 +51,41 @@ document.addEventListener('DOMContentLoaded', () => {
         tomSelectInstances.sortBy = new TomSelect(filterDom.sortBy, {});
     }
 
+    async function handleSaveToggle(saveContainer) {
+        const articleId = parseInt(saveContainer.dataset.articleId, 10);
+        if (!articleId) return;
+
+        const isSaved = saveContainer.classList.contains('saved');
+        const icon = saveContainer.querySelector('.save-icon');
+
+        try {
+            if (isSaved) {
+                // --- Unsave the article ---
+                await apiService.unsaveArticle(articleId);
+                savedArticleIds.delete(articleId); // Update local state
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                saveContainer.classList.remove('saved');
+                saveContainer.title = 'Lưu bài viết';
+            } else {
+                // --- Save the article ---
+                await apiService.saveArticle(articleId);
+                savedArticleIds.add(articleId); // Update local state
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                saveContainer.classList.add('saved');
+                saveContainer.title = 'Bỏ lưu bài viết';
+            }
+        } catch (error) {
+            // Check for 401 Unauthorized
+            if (error.message.includes('401') || error.message.toLowerCase().includes('validate credentials')) {
+                 showAlert('Vui lòng đăng nhập để lưu bài viết.', 'warning');
+            } else {
+                 showAlert(`Lỗi: ${error.message}`, 'danger');
+            }
+        }
+    }
+
     async function fetchAndRenderArticles() {
         dom.articlesList.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
         dom.alertContainer.innerHTML = '';
@@ -256,7 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageLinkTarget = e.target.closest('a.page-link');
             const suggestionTarget = e.target.closest('.suggestion-item');
             const removeKeywordBtn = e.target.closest('.selected-keyword-tag .btn-close');
+            const saveContainerTarget = e.target.closest('.save-icon-container');
 
+            if (saveContainerTarget) {
+                e.preventDefault(); // Prevent link navigation
+                e.stopPropagation(); // Stop event from bubbling up to the card's link
+                handleSaveToggle(saveContainerTarget);
+                return; // Stop further execution
+            }
             if (tagTarget) {
                 e.preventDefault();
                 const { type, id } = tagTarget.dataset;
@@ -337,10 +379,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // === INITIALIZATION ===
-    function initialize() {
+    async function initialize() {
         renderLayout();
-        initializeTomSelects();
+        await initializeTomSelects(); // Using await just in case
         addEventListeners();
+
+        // === FETCH SAVED ARTICLES ON LOAD ===
+        if (getCurrentUser()) { // Only fetch if user is logged in
+            try {
+                const result = await apiService.getSavedArticleIds();
+                if (result.success && Array.isArray(result.data)) {
+                    savedArticleIds = new Set(result.data);
+                }
+            } catch (error) {
+                console.error("Could not fetch saved articles:", error);
+                // Don't show an alert here, just fail silently
+            }
+        }
+        // ===================================
+        
+        // Now fetch articles, which will use the `savedArticleIds` set
         fetchAndRenderArticles();
         fetchAndRenderCategories();
         fetchAndRenderSources();

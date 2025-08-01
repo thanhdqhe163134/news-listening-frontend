@@ -1,20 +1,22 @@
 const API_BASE_URL = config.API_BASE_URL;
 
 const apiService = {
-    /**
-     * Hàm gốc để gửi yêu cầu đến API, hỗ trợ cả tham số thường và mảng.
-     * @param {string} endpoint - Đường dẫn API (ví dụ: '/articles/').
-     * @param {object} options - Cấu hình cho fetch (method, headers, body).
-     * @returns {Promise<object|null>} - Dữ liệu JSON từ API hoặc null nếu có lỗi.
-     */
     async _request(endpoint, options = {}) {
+        // --- ADD AUTHORIZATION HEADER ---
+        const token = getCookie('accessToken'); // Assuming getCookie is globally available from auth.js
+        const headers = {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+            ...options.headers,
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        // --- END OF CHANGE ---
+
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true',
-                    ...options.headers,
-                },
+                headers, // Use the new headers object
                 ...options,
             });
 
@@ -184,6 +186,22 @@ const apiService = {
     
     deleteCategory(categoryId) {
         return this._request(`/categories/${categoryId}`, {
+            method: 'DELETE',
+        });
+    },
+    getSavedArticleIds() {
+        return this._request('/users/me/saved-articles/');
+    },
+
+    saveArticle(articleId) {
+        return this._request('/users/me/saved-articles/', {
+            method: 'POST',
+            body: JSON.stringify({ article_id: articleId }),
+        });
+    },
+
+    unsaveArticle(articleId) {
+        return this._request(`/users/me/saved-articles/${articleId}`, {
             method: 'DELETE',
         });
     }
