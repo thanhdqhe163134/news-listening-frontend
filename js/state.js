@@ -11,6 +11,7 @@ let queryState = {
 };
 
 let savedArticleIds = new Set();
+let savedProcurements = new Map();
 // Cập nhật trạng thái cho bộ lọc, luôn reset về trang 1
 function updateQueryState(updates, callback) {
     queryState = { ...queryState, ...updates, page: 1 };

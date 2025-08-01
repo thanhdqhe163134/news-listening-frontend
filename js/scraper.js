@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
         procurementType: 'invitation',
     };
     
-    let savedProcurements = new Map();
 
     // === DOM ELEMENTS ===
     const dom = {

@@ -14,11 +14,6 @@ function setCookie(name, value, days) {
     document.cookie = name + "=" + (value || "")  + expires + "; path=/";
 }
 
-/**
- * Lấy giá trị của một cookie.
- * @param {string} name - Tên của cookie.
- * @returns {string|null} Giá trị của cookie hoặc null nếu không tìm thấy.
- */
 function getCookie(name) {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
@@ -33,18 +28,10 @@ function getCookie(name) {
     return null;
 }
 
-/**
- * Xóa một cookie.
- * @param {string} name - Tên của cookie.
- */
 function deleteCookie(name) {  
     document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
 
-
-/**
- * Chuyển hướng người dùng đến trang đăng nhập của Google.
- */
 function googleLogin() {
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID);
@@ -56,9 +43,6 @@ function googleLogin() {
     window.location.href = authUrl.toString();
 }
 
-/**
- * Xóa thông tin đăng nhập (cookies) và tải lại trang.
- */
 function logout() {
     deleteCookie('accessToken');
     deleteCookie('refreshToken');
@@ -66,10 +50,6 @@ function logout() {
     window.location.reload();
 }
 
-/**
- * Lấy thông tin người dùng từ cookie.
- * @returns {object|null} Thông tin người dùng hoặc null nếu chưa đăng nhập.
- */
 function getCurrentUser() {
     const userCookie = getCookie('user');
     try {
@@ -80,11 +60,6 @@ function getCurrentUser() {
     }
 }
 
-/**
- * Renders the HTML for a single saved procurement item.
- * @param {object} procurement The procurement data object.
- * @returns {string} The HTML string for the card.
- */
 function renderSavedProcurement(procurement) {
     const postedDate = procurement.posted_at ? new Date(procurement.posted_at).toLocaleDateString('vi-VN') : 'N/A';
     const linkHtml = procurement.original_link 
@@ -92,7 +67,6 @@ function renderSavedProcurement(procurement) {
         : '';
     const itemTypeDisplay = procurement.item_type === 'tbmt' ? 'Thông báo mời thầu' : 'Kế hoạch LCNT';
 
-    // --- ADDED data-item-code to sync with main page ---
     const unsaveButtonHtml = `
         <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 unsave-procurement-btn" 
                 title="Bỏ lưu"
@@ -123,9 +97,6 @@ function renderSavedProcurement(procurement) {
     `;
 }
 
-/**
- * Creates and injects the modal for saved items into the page.
- */
 function injectSavedItemsModal() {
     if (document.getElementById('savedItemsModal')) return; 
 
@@ -178,14 +149,27 @@ async function initializeAuthUI() {
     const user = getCurrentUser();
 
     if (user) {
+        // --- FIX IS HERE: Fetch both saved articles AND procurements globally ---
         try {
-            const result = await apiService.getSavedArticleIds();
-            if (result.success && Array.isArray(result.data)) {
-                savedArticleIds = new Set(result.data);
+            const [articlesResult, procurementsResult] = await Promise.all([
+                apiService.getSavedArticleIds(),
+                apiService.fetchUserProcurements() // Fetch all saved procurements
+            ]);
+
+            if (articlesResult.success && Array.isArray(articlesResult.data)) {
+                savedArticleIds = new Set(articlesResult.data);
+            }
+
+            if (procurementsResult.success && Array.isArray(procurementsResult.data)) {
+                savedProcurements.clear();
+                procurementsResult.data.forEach(item => {
+                    savedProcurements.set(item.item_code, item.user_procurement_id);
+                });
             }
         } catch (error) {
-            console.error("Could not fetch saved articles on init:", error);
+            console.error("Could not fetch saved items on init:", error);
         }
+        // --- END FIX ---
 
         authContainer.innerHTML = `
             <div class="dropdown">
@@ -243,12 +227,11 @@ async function initializeAuthUI() {
                 }
             });
 
-            // --- REFACTORED AND FIXED: Universal unsave event listener ---
             savedItemsModalElement.addEventListener('click', async (event) => {
                 const unsaveArticleBtn = event.target.closest('.save-icon-container');
                 const unsaveProcurementBtn = event.target.closest('.unsave-procurement-btn');
                 const modalAlertContainer = document.getElementById('modal-alert-container');
-
+                
                 const fadeOutAndRemove = (element) => {
                     const card = element.closest('.card');
                     if (card) {
@@ -266,7 +249,7 @@ async function initializeAuthUI() {
                                 : 'Bạn chưa lưu mục mua sắm công nào.';
                             listElement.innerHTML = `<div class="alert alert-info text-center">${message}</div>`;
                         }
-                    }, 350); // Delay to check after fade-out animation
+                    }, 350);
                 };
 
                 if (unsaveArticleBtn) {
@@ -278,9 +261,7 @@ async function initializeAuthUI() {
                         await apiService.unsaveArticle(articleId);
                         fadeOutAndRemove(unsaveArticleBtn);
                         savedArticleIds.delete(parseInt(articleId, 10));
-
                         checkAndShowEmptyMessage(document.getElementById('saved-articles-list'), 'article');
-
                         const mainPageIconContainer = document.querySelector(`.article-card[data-article-id-wrapper="${articleId}"] .save-icon-container`);
                         if (mainPageIconContainer) {
                             mainPageIconContainer.classList.remove('saved');
@@ -301,15 +282,8 @@ async function initializeAuthUI() {
                      try {
                         await apiService.deleteUserProcurement(procurementId);
                         fadeOutAndRemove(unsaveProcurementBtn);
-                        
-                        for (let [key, value] of savedProcurements.entries()) {
-                            if (key === itemCode) {
-                                savedProcurements.delete(key);
-                                break;
-                            }
-                        }
+                        savedProcurements.delete(itemCode); // Use itemCode to delete from the global Map
                         checkAndShowEmptyMessage(document.getElementById('saved-procurements-list'), 'procurement');
-
                         const mainPageButton = document.querySelector(`.save-procurement-btn[data-item-code="${itemCode}"]`);
                         if (mainPageButton) {
                             mainPageButton.dataset.isSaved = 'false';
