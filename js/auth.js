@@ -1,3 +1,6 @@
+let allSavedArticles = [];
+let allSavedProcurements = [];
+
 /**
  * Thiết lập một cookie.
  * @param {string} name - Tên của cookie.
@@ -93,7 +96,7 @@ function renderSavedProcurement(procurement) {
                     <strong>Bên mời thầu:</strong> ${procurement.procuring_entity || 'N/A'}
                 </p>
                 <p class="card-text small">
-                    <strong>Published Date:</strong> ${postedDate}
+                    <strong>Ngày đăng tải:</strong> ${postedDate}
                 </p>
                 
                 <div class="d-flex justify-content-between align-items-center mt-3">
@@ -103,6 +106,74 @@ function renderSavedProcurement(procurement) {
             </div>
         </div>
     `;
+}
+
+function displaySavedArticles() {
+    const listEl = document.getElementById('saved-articles-list');
+    if (!listEl) return;
+
+    // Lấy giá trị từ các bộ lọc
+    const searchTerm = document.getElementById('saved-article-search').value.toLowerCase();
+    const sentiment = document.getElementById('saved-article-sentiment').value;
+    const sortBy = document.getElementById('saved-article-sort').value;
+
+    // Bắt đầu với danh sách đầy đủ
+    let filtered = [...allSavedArticles];
+
+    // Lọc theo từ khóa tìm kiếm
+    if (searchTerm) {
+        filtered = filtered.filter(a =>
+            (a.title && a.title.toLowerCase().includes(searchTerm)) ||
+            (a.content && a.content.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Lọc theo sắc thái
+    if (sentiment) {
+        filtered = filtered.filter(a => a.sentiment && a.sentiment.toLowerCase() === sentiment);
+    }
+
+    // Sắp xếp
+    filtered.sort((a, b) => {
+        const dateA = new Date(sortBy.includes('published') ? a.published_at : a.saved_at);
+        const dateB = new Date(sortBy.includes('published') ? b.published_at : b.saved_at);
+        return sortBy.endsWith('_asc') ? dateA - dateB : dateB - dateA;
+    });
+    
+    // Hiển thị kết quả
+    listEl.innerHTML = filtered.length > 0
+        ? filtered.map(createArticleCard).join('')
+        : '<div class="alert alert-info text-center">Không tìm thấy bài viết nào phù hợp.</div>';
+}
+
+function displaySavedProcurements() {
+    const listEl = document.getElementById('saved-procurements-list');
+    if (!listEl) return;
+
+    // Lấy giá trị từ các bộ lọc
+    const searchTerm = document.getElementById('saved-procurement-search').value.toLowerCase();
+    const sortBy = document.getElementById('saved-procurement-sort').value;
+
+    // Bắt đầu với danh sách đầy đủ
+    let filtered = [...allSavedProcurements];
+
+    // Lọc theo tên gói thầu
+    if (searchTerm) {
+        filtered = filtered.filter(p => p.project_name && p.project_name.toLowerCase().includes(searchTerm));
+    }
+
+    // Sắp xếp
+    filtered.sort((a, b) => {
+        // 'created_at' là ngày lưu, 'published_at' là ngày đăng
+        const dateA = new Date(sortBy.includes('published') ? a.published_at : a.created_at);
+        const dateB = new Date(sortBy.includes('published') ? b.published_at : b.created_at);
+        return sortBy.endsWith('_asc') ? dateA - dateB : dateB - dateA;
+    });
+
+    // Hiển thị kết quả
+    listEl.innerHTML = filtered.length > 0
+        ? filtered.map(renderSavedProcurement).join('')
+        : '<div class="alert alert-info text-center">Không tìm thấy mục nào phù hợp.</div>';
 }
 
 function injectSavedItemsModal() {
@@ -132,9 +203,41 @@ function injectSavedItemsModal() {
                     </ul>
                     <div class="tab-content pt-3" id="savedItemsTabContent">
                         <div class="tab-pane fade show active" id="saved-articles-pane" role="tabpanel" aria-labelledby="saved-articles-tab" tabindex="0">
+                            <div class="row g-2 mb-3 p-2 border rounded bg-light">
+                                <div class="col-12">
+                                    <input type="text" id="saved-article-search" class="form-control" placeholder="Tìm theo tiêu đề, nội dung...">
+                                </div>
+                                <div class="col-md-6">
+                                    <select id="saved-article-sort" class="form-select">
+                                        <option value="saved_at_desc">Lưu gần đây nhất</option>
+                                        <option value="published_at_desc">Ngày xuất bản (mới nhất)</option>
+                                        <option value="published_at_asc">Ngày xuất bản (cũ nhất)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select id="saved-article-sentiment" class="form-select">
+                                        <option value="">Tất cả sắc thái</option>
+                                        <option value="positive">Tích cực</option>
+                                        <option value="negative">Tiêu cực</option>
+                                        <option value="neutral">Trung tính</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div id="saved-articles-list" class="vstack gap-3"></div>
                         </div>
                         <div class="tab-pane fade" id="saved-procurements-pane" role="tabpanel" aria-labelledby="saved-procurements-tab" tabindex="0">
+                             <div class="row g-2 mb-3 p-2 border rounded bg-light">
+                                <div class="col-md-8">
+                                    <input type="text" id="saved-procurement-search" class="form-control" placeholder="Tìm theo tên gói thầu...">
+                                </div>
+                                <div class="col-md-4">
+                                     <select id="saved-procurement-sort" class="form-select">
+                                        <option value="saved_at_desc">Lưu gần đây nhất</option>
+                                        <option value="published_at_desc">Ngày đăng (mới nhất)</option>
+                                        <option value="published_at_asc">Ngày đăng (cũ nhất)</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div id="saved-procurements-list" class="vstack gap-3"></div>
                         </div>
                     </div>
@@ -152,6 +255,8 @@ function injectSavedItemsModal() {
  * Cập nhật giao diện header dựa trên trạng thái đăng nhập.
  */
 async function initializeAuthUI() {
+    
+
     const authContainer = document.getElementById('auth-status-container');
     if (!authContainer) return;
     const user = getCurrentUser();
@@ -203,11 +308,30 @@ async function initializeAuthUI() {
 
         if (savedItemsLink && savedItemsModalElement) {
             const savedItemsModal = new bootstrap.Modal(savedItemsModalElement);
+
+            // Gắn sự kiện cho các bộ lọc ngay sau khi modal được tạo
+            // Dùng 'input' cho ô search để lọc ngay khi gõ
+            savedItemsModalElement.addEventListener('input', e => {
+                if (e.target.id === 'saved-article-search') displaySavedArticles();
+                if (e.target.id === 'saved-procurement-search') displaySavedProcurements();
+            });
+            // Dùng 'change' cho các dropdown
+            savedItemsModalElement.addEventListener('change', e => {
+                if (e.target.id === 'saved-article-sort' || e.target.id === 'saved-article-sentiment') {
+                    displaySavedArticles();
+                }
+                if (e.target.id === 'saved-procurement-sort') {
+                    displaySavedProcurements();
+                }
+            });
+
+
             savedItemsLink.addEventListener('click', async (event) => {
                 event.preventDefault();
                 const articlesList = document.getElementById('saved-articles-list');
                 const procurementsList = document.getElementById('saved-procurements-list');
                 const loadingHtml = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
+                
                 articlesList.innerHTML = loadingHtml;
                 procurementsList.innerHTML = loadingHtml;
                 savedItemsModal.show();
@@ -217,17 +341,21 @@ async function initializeAuthUI() {
                         apiService.fetchSavedArticles(),
                         apiService.fetchUserProcurements()
                     ]);
+                    
                     if (articlesResult.success && Array.isArray(articlesResult.data)) {
-                        articlesList.innerHTML = articlesResult.data.length > 0
-                            ? articlesResult.data.map(createArticleCard).join('')
-                            : '<div class="alert alert-info text-center">Bạn chưa lưu bài viết nào.</div>';
+                        allSavedArticles = articlesResult.data;
+                        // Thêm trường saved_at để sắp xếp (API không trả về)
+                        allSavedArticles.forEach(a => a.saved_at = new Date()); // Giả định ngày lưu là hiện tại
                     } else { throw new Error(articlesResult.message || "Không thể tải bài viết."); }
                     
                     if (procurementsResult.success && Array.isArray(procurementsResult.data)) {
-                        procurementsList.innerHTML = procurementsResult.data.length > 0
-                            ? procurementsResult.data.map(renderSavedProcurement).join('')
-                            : '<div class="alert alert-info text-center">Bạn chưa lưu mục mua sắm công nào.</div>';
+                        allSavedProcurements = procurementsResult.data;
                     } else { throw new Error(procurementsResult.message || "Không thể tải mục mua sắm công."); }
+
+                    // Gọi hàm hiển thị lần đầu
+                    displaySavedArticles();
+                    displaySavedProcurements();
+
                 } catch (error) {
                     const errorHtml = `<div class="alert alert-danger">${error.message}</div>`;
                     articlesList.innerHTML = errorHtml;
