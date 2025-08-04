@@ -181,96 +181,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // === EVENT LISTENERS ===
-    function setupEventListeners() {
-        dom.procurementTypeRadios.forEach(radio => radio.addEventListener('change', handleTypeChange));
+function setupEventListeners() {
+    dom.procurementTypeRadios.forEach(radio => radio.addEventListener('change', handleTypeChange));
 
-        dom.paginationContainer.addEventListener('click', (e) => {
+    dom.paginationContainer.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pageLink = e.target.closest('[data-page]');
+        if (!pageLink || pageLink.parentElement.classList.contains('disabled')) return;
+        const pageNumber = parseInt(pageLink.dataset.page, 10);
+        if (pageNumber !== state.currentPage) executeScrape(pageNumber);
+    });
+
+    dom.resultsContainer.addEventListener('click', async (e) => {
+        const getLinkBtn = e.target.closest('.get-link-btn');
+        const saveBtn = e.target.closest('.save-procurement-btn');
+
+        // --- KHỐI MÃ CHO NÚT "LẤY LINK" (ĐÃ PHỤC HỒI) ---
+        if (getLinkBtn) {
             e.preventDefault();
-            const pageLink = e.target.closest('[data-page]');
-            if (!pageLink || pageLink.parentElement.classList.contains('disabled')) return;
-            const pageNumber = parseInt(pageLink.dataset.page, 10);
-            if (pageNumber !== state.currentPage) executeScrape(pageNumber);
-        });
+            const row = getLinkBtn.closest('tr');
+            const code1 = row.cells[0].textContent;
+            const code = String(code1.slice(0, 12));
+            const linkCell = getLinkBtn.parentElement;
+            
+            getLinkBtn.disabled = true;
+            getLinkBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+            
+            const kind = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
+            try {
+                const result = await apiService.getProcurementLinks([{ kind, code }]);
+                const finalLink = result?.data?.[0]?.link;
 
-        dom.resultsContainer.addEventListener('click', async (e) => {
-            const getLinkBtn = e.target.closest('.get-link-btn');
-            const saveBtn = e.target.closest('.save-procurement-btn');
-
-            if (getLinkBtn) {
-                e.preventDefault();
-                const row = getLinkBtn.closest('tr');
-                const code1 = row.cells[0].textContent;
-                const code = String(code1.slice(0,12));
-                const linkCell = getLinkBtn.parentElement;
-                console.log(code)
-                
-                getLinkBtn.disabled = true;
-                getLinkBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
-                
-                const kind = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
-                try {
-                    const result = await apiService.getProcurementLinks([{ kind, code }]);
-                    const finalLink = result?.data?.[0]?.link;
-                    if (finalLink) {
-                        window.open(finalLink, '_blank');
-                        linkCell.innerHTML = `<a href="${finalLink}" target="_blank" class="btn btn-sm btn-success" title="Đã mở link">${code}</a>`;
-                    } else throw new Error();
-                } catch (error) {
-                    showAlert('Không thể lấy link.', 'danger');
-                    getLinkBtn.disabled = false;
-                    getLinkBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i>`;
+                if (finalLink && finalLink !== "https://muasamcong.mpi.gov.vn/") {
+                    window.open(finalLink, '_blank');
+                    linkCell.innerHTML = `<a href="${finalLink}" target="_blank" class="btn btn-sm btn-success" title="Đã mở link">${code}</a>`;
+                } else {
+                    throw new Error('Không lấy được link chi tiết từ API.');
                 }
+            } catch (error) {
+                showAlert('Không thể lấy link. ' + error.message, 'danger');
+                getLinkBtn.disabled = false;
+                getLinkBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i>`;
+            }
+        }
+
+        // --- KHỐI MÃ CHO NÚT "LƯU" (VẪN GIỮ NGUYÊN) ---
+        if (saveBtn) {
+            e.preventDefault();
+            if (!getCurrentUser()) {
+                showAlert('Vui lòng đăng nhập để sử dụng tính năng này.', 'warning');
+                return;
             }
 
-            if (saveBtn) {
-                e.preventDefault();
-                if (!getCurrentUser()) {
-                    showAlert('Vui lòng đăng nhập để sử dụng tính năng này.', 'warning');
-                    return;
-                }
+            const { itemCode, projectName, procuringEntity, publishedAt, isSaved, procurementId } = saveBtn.dataset;
+            const itemType = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
 
-                const { itemCode, projectName, procuringEntity, publishedAt, isSaved, procurementId } = saveBtn.dataset;
-                const itemType = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
 
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+            try {
+                if (isSaved === 'true') {
+                    await apiService.deleteUserProcurement(procurementId);
+                    savedProcurements.delete(itemCode);
+                    showAlert('Đã bỏ lưu tin thành công.', 'info');
+                    saveBtn.dataset.isSaved = 'false';
+                    saveBtn.title = 'Lưu tin';
+                } else {
+                    const apiCode = itemCode.slice(0, 12);
+                    const kind = state.procurementType === 'plan' ? 'khlcnt' : 'tbmt';
+                    const linkResult = await apiService.getProcurementLinks([{ kind, code: apiCode }]);
+                    const finalLink = linkResult?.data?.[0]?.link;
+                    
+                    if (!finalLink || finalLink === "https://muasamcong.mpi.gov.vn/") {
+                        throw new Error("Không thể lấy được link chi tiết. Vui lòng thử lại.");
+                    }
 
-                try {
-                    if (isSaved === 'true') {
-                        await apiService.deleteUserProcurement(procurementId);
-                        savedProcurements.delete(itemCode);
-                        showAlert('Đã bỏ lưu tin thành công.', 'info');
-                    } else {
-                        const payload = {
-                            item_code: itemCode,
-                            item_type: itemType,
-                            project_name: projectName,
-                            procuring_entity: procuringEntity,
-                            published_at: parseApiDate(publishedAt)
-                        };
-                        const result = await apiService.saveUserProcurement(payload);
-                        if (result.success && result.data) {
-                            savedProcurements.set(itemCode, result.data.user_procurement_id);
-                            saveBtn.dataset.procurementId = result.data.user_procurement_id;
-                            showAlert('Lưu tin thành công.', 'success');
-                        }
+                    const payload = {
+                        item_code: itemCode,
+                        item_type: itemType,
+                        project_name: projectName,
+                        procuring_entity: procuringEntity,
+                        published_at: parseApiDate(publishedAt),
+                        original_link: finalLink
+                    };
+
+                    const result = await apiService.saveUserProcurement(payload);
+                    if (result.success && result.data) {
+                        savedProcurements.set(itemCode, result.data.user_procurement_id);
+                        saveBtn.dataset.procurementId = result.data.user_procurement_id;
+                        showAlert('Lưu tin thành công.', 'success');
                     }
                     
-                    const wasSaved = isSaved === 'true';
-                    saveBtn.dataset.isSaved = !wasSaved;
-                    saveBtn.title = wasSaved ? 'Lưu tin' : 'Bỏ lưu';
-                } catch (error) {
-                    showAlert(error.message, 'danger');
-                } finally {
-                    saveBtn.disabled = false;
-                    const icon = saveBtn.querySelector('i') || document.createElement('i');
-                    icon.className = saveBtn.dataset.isSaved === 'true' ? 'bi bi-bookmark-check-fill text-success' : 'bi bi-bookmark';
-                    saveBtn.innerHTML = '';
-                    saveBtn.appendChild(icon);
+                    saveBtn.dataset.isSaved = 'true';
+                    saveBtn.title = 'Bỏ lưu';
                 }
+            } catch (error) {
+                showAlert(error.message, 'danger');
+                saveBtn.dataset.isSaved = isSaved;
+                saveBtn.title = isSaved === 'true' ? 'Bỏ lưu' : 'Lưu tin';
+            } finally {
+                saveBtn.disabled = false;
+                const icon = saveBtn.querySelector('i') || document.createElement('i');
+                icon.className = saveBtn.dataset.isSaved === 'true' ? 'bi bi-bookmark-check-fill text-success' : 'bi bi-bookmark';
+                saveBtn.innerHTML = '';
+                saveBtn.appendChild(icon);
             }
-        });
-    }
+        }
+    });
+}
 
     // === INITIALIZATION ===
     function initialize() {

@@ -65,14 +65,15 @@ function renderSavedProcurement(procurement) {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
     }) : 'N/A';
-    
+
     const linkHtml = procurement.original_link 
-        ? `<a href="${procurement.original_link}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">Xem chi tiết</a>` 
-        : '';
+        ? `<a href="${procurement.original_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>Mở link gốc</a>` 
+        : '<div></div>';
+
     const itemTypeDisplay = procurement.item_type === 'tbmt' ? 'Thông báo mời thầu' : 'Kế hoạch LCNT';
 
     const unsaveButtonHtml = `
-        <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 unsave-procurement-btn" 
+        <button class="btn btn-sm btn-danger unsave-procurement-btn" 
                 title="Bỏ lưu"
                 data-procurement-id="${procurement.user_procurement_id}"
                 data-item-code="${procurement.item_code}">
@@ -82,7 +83,6 @@ function renderSavedProcurement(procurement) {
 
     return `
         <div class="card shadow-sm mb-3 position-relative">
-            ${unsaveButtonHtml}
             <div class="card-body">
                 <h6 class="card-title mb-1">${procurement.project_name}</h6>
                 <p class="card-subtitle mb-2 text-muted small">
@@ -93,9 +93,13 @@ function renderSavedProcurement(procurement) {
                     <strong>Bên mời thầu:</strong> ${procurement.procuring_entity || 'N/A'}
                 </p>
                 <p class="card-text small">
-                    <strong>Ngày đăng:</strong> ${postedDate}
+                    <strong>Published Date:</strong> ${postedDate}
                 </p>
-                ${linkHtml}
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    ${linkHtml}
+                    ${unsaveButtonHtml}
+                </div>
             </div>
         </div>
     `;
