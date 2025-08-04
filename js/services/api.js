@@ -163,6 +163,10 @@ const apiService = {
         return this._fetch('/dashboard/top-keywords', { limit });
     },
     
+    sendLatestArticlesByEmail() {
+        return this._request('/dashboard/send-latest-articles', { method: 'POST' });
+    },
+
     // --- APIs cho Categories (CRUD) ---
     fetchCategory(categoryId) {
         return this._fetch(`/categories/${categoryId}`);

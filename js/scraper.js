@@ -68,12 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rowsData = table.rows.map(row => {
             const firstCell = row[0] || '';
-            // --- FIX IS HERE: Use a regular expression for robust code extraction ---
             // const codeMatch = firstCell.match(/^([A-Z0-9-]+)/);
             const code = firstCell.slice(0, 15);
             const rest = firstCell.length > 15 ? firstCell.slice(15).trim() : '';
-            const description = firstCell.substring(code.length).trim();
-            // --- END FIX ---
+            const description = firstCell.substring(code.length).trim();    
             const procuringEntity = row[1] || '';
             const publishedDateStr = row[2] || '';
             const originalCells = row.slice(1);

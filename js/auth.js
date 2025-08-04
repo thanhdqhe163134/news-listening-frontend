@@ -262,7 +262,6 @@ async function initializeAuthUI() {
     const user = getCurrentUser();
 
     if (user) {
-        // --- FIX IS HERE: Fetch both saved articles AND procurements globally ---
         try {
             const [articlesResult, procurementsResult] = await Promise.all([
                 apiService.getSavedArticleIds(),
@@ -282,7 +281,6 @@ async function initializeAuthUI() {
         } catch (error) {
             console.error("Could not fetch saved items on init:", error);
         }
-        // --- END FIX ---
 
         authContainer.innerHTML = `
             <div class="dropdown">

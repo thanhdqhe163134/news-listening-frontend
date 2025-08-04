@@ -1,3 +1,4 @@
+// js/dashboard.js
 document.addEventListener('DOMContentLoaded', () => {
     // === DOM ELEMENTS ===
     const dom = {
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sentimentPeriodBtns: document.querySelectorAll('.sentiment-period-btn'),
         topCategoriesLimitSelect: document.getElementById('topCategoriesLimitSelect'),
         topKeywordsLimitSelect: document.getElementById('topKeywordsLimitSelect'),
+        sendEmailBtn: document.getElementById('send-email-btn'), // Thêm nút gửi email
     };
 
     // To hold the chart instances for updates/destruction
@@ -262,6 +264,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         crawlBtn.disabled = false;
                         crawlBtn.innerHTML = originalHtml;
+                    }, 3000);
+                }
+            });
+        }
+        if (dom.sendEmailBtn) {
+            dom.sendEmailBtn.addEventListener('click', async () => {
+                const originalHtml = dom.sendEmailBtn.innerHTML;
+                dom.sendEmailBtn.disabled = true;
+                // Cập nhật text của nút
+                dom.sendEmailBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tổng hợp & gửi...`;
+
+                try {
+                    const result = await apiService.sendLatestArticlesByEmail();
+                    showAlert(result.message || 'Yêu cầu gửi email đã được thực hiện.', 'success');
+                } catch (error) {
+                    showAlert(error.message, 'danger');
+                } finally {
+                    setTimeout(() => {
+                        dom.sendEmailBtn.disabled = false;
+                        dom.sendEmailBtn.innerHTML = originalHtml;
                     }, 3000);
                 }
             });
