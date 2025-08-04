@@ -61,7 +61,11 @@ function getCurrentUser() {
 }
 
 function renderSavedProcurement(procurement) {
-    const postedDate = procurement.posted_at ? new Date(procurement.posted_at).toLocaleDateString('vi-VN') : 'N/A';
+    const postedDate = procurement.published_at ? new Date(procurement.published_at).toLocaleString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    }) : 'N/A';
+    
     const linkHtml = procurement.original_link 
         ? `<a href="${procurement.original_link}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">Xem chi tiết</a>` 
         : '';

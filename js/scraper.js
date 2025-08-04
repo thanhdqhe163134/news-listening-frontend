@@ -25,15 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // === HELPER FUNCTIONS ===
     function parseApiDate(dateStr) {
-        if (!dateStr) return null;
-        const parts = dateStr.split(' ');
-        if (parts.length < 2) return null;
-        const timeParts = parts[0].split(':');
-        const dateParts = parts[1].split('/');
-        if (timeParts.length !== 2 || dateParts.length !== 3) return null;
-        const dateObj = new Date(Date.UTC(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1]));
-        return dateObj.toISOString();
-    }
+    if (!dateStr) return null;
+    const parts = dateStr.split(' ');
+    if (parts.length < 2) return null;
+    const timeParts = parts[0].split(':');
+    const dateParts = parts[1].split('/');
+    if (timeParts.length !== 2 || dateParts.length !== 3) return null;
+    
+    // Bỏ Date.UTC để trình duyệt hiểu đây là giờ địa phương
+    const dateObj = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1]);
+    
+    // toISOString() sẽ tự động chuyển đổi sang giờ UTC để lưu trữ chuẩn hóa
+    return dateObj.toISOString();
+}
 
     // === RENDER FUNCTIONS ===
     function renderLayout() {
@@ -242,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             item_type: itemType,
                             project_name: projectName,
                             procuring_entity: procuringEntity,
-                            posted_at: parseApiDate(publishedAt) 
+                            published_at: parseApiDate(publishedAt)
                         };
                         const result = await apiService.saveUserProcurement(payload);
                         if (result.success && result.data) {
