@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSentimentDistributionChart(distribution) {
         if (!dom.sentimentDistributionCanvas) return;
         
-        // --- FIX IS HERE ---
         // Destroy the previous chart instance if it exists
         if (sentimentDistributionChart) {
             sentimentDistributionChart.destroy();

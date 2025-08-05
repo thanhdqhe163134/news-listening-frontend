@@ -10,7 +10,7 @@ body {
 }
 
 .main-content {
-    min-width: 0; /* Fix cho flexbox overflow */
+    min-width: 0; 
 }
 
 .main-sidebar .nav-link {
